@@ -3,6 +3,7 @@
 作用：内存分配和回收
 说明：
 ①free_list上挂载的是可以使用的内存块，具体大小被划分成8、16、24等，以union形式存在，内部指针存放的是下一个内存块的地址
+②所有的申请、释放都是以字节数为单位
 ***************************************************************************************/
 #ifndef ALLOC_H
 #define ALLOC_H
@@ -56,12 +57,13 @@ namespace TinySTL
 	}
 #endif
 
+	/********************************************************************************************/
 	class alloc
 	{
 	public:  //对外接口
-		static void* allocate(size_t n);
-		static void  deallocate(void *p, size_t n);
-		static void* reallocate(void *p, size_t old_size, size_t new_size);
+		static void* allocate(size_t n);	//n代表申请的内存大小
+		static void  deallocate(void *p, size_t n); //n大于128直接释放，小于128回收到free_list中
+		static void* reallocate(void *p, size_t old_size, size_t new_size); //先释放，再分配
 
 	private:
 		union  obj_union
@@ -196,7 +198,7 @@ namespace TinySTL
 				{
 					my_free_list = free_list[m_freelist_index(i)];
 					tmp = my_free_list;
-					if (tmp) //因为内个内存块都是存的下一个内存块的地址，到最后一块的话就为0了
+					if (tmp) //因为每个内存块都是存的下一个内存块的地址，到最后一块的话就为0了
 					{
 						my_free_list = tmp->free_list_link;
 						memory_pool_start = (char*)tmp; //内存池为空了，所以可以重新定位start、end的位置
@@ -245,5 +247,5 @@ namespace TinySTL
 		return result;
 	}
 
-}  //namespace mystl
+}  //namespace TinySTL
 #endif // !ALLOC_H
