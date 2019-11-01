@@ -33,6 +33,7 @@ public:
 	static void construct(T *ptr);
 	static void construct(T *ptr, const T&value);
 	static void destory(T *ptr);
+	static void destory(T *first, T *last);
 };
 
 template<typename T>
@@ -71,5 +72,11 @@ template<typename T>
 void allocator<T>::destory(T *ptr) {
 	TinySTL::destory(ptr);
 }
+template<typename T>
+void allocator<T>::destory(T *first, T *last) {
+	for (; first != last; ++first)
+		TinySTL::destory(first);
+}
+
 #endif // !ALLOCATOR_H
 
