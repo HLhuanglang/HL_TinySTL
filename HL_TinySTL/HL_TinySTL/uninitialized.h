@@ -68,18 +68,17 @@ namespace TinySTL {
 	作用：对[first，first+n*sizeof(T)）范围内进行n个相同对象的构造
 	***********************************************************************/
 	template<typename ForwardIterator, typename Size,typename T>
-	ForwardIterator _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __true_type) {
-		for (; n>0; --n,++first)
-			*first = value;
-		return first;
+	void _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __true_type) {
+		ForwardIterator cur = first;
+		for (; n>0; --n,++cur)
+			*cur = value;
  	}
 
 	template<typename ForwardIterator , typename Size, typename T>
-	ForwardIterator _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __false_type) {
+	void _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __false_type) {
 		ForwardIterator cur = first;
 		for (; n > 0; --n, ++cur)
 			TinySTL::construct(&*cur, value);
-		return first;
 	}
 
 	template<typename ForwardIterator, typename Size, typename T>
