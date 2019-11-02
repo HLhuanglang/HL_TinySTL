@@ -62,6 +62,15 @@ namespace TinySTL {
 			uninitialized_copy(first, last, first_);
 			last_ = end_ = first_ + (last - first);
 		}
+
+		template<typename Integer>
+		void vector_construct(Integer n, Integer value, __true_type) {
+			allocate_and_fill_n(n, value);
+		}
+		template<typename InputIterator>
+		void vector_construct(InputIterator first, InputIterator last,__false_type) {
+			allocate_and_copy(first, last);
+		}
 	};
 
 	template<typename T, typename Alloc>
@@ -71,13 +80,15 @@ namespace TinySTL {
 
 	template<typename T, typename Alloc>
 	vector<T, Alloc>::vector(const size_type n, const value_type &value) {
+		//当我们定义vector<T>时，这个T只影响value_type, size_type和T 无关，就是个size_t
 		allocate_and_fill_n(n, value);
 	}
 
 	template<typename T, typename Alloc>
 	template<typename InputIterator>
 	vector<T, Alloc>::vector(InputIterator first, InputIterator last) {
-		allocate_and_copy(first, last);
+		typedef typename __is_integer<InputIterator>::is_integer INTEGER;
+		vector_construct(first, last, INTEGER());
 	}
 }//namaspace TinySTL
 #endif // !VECTOR_H

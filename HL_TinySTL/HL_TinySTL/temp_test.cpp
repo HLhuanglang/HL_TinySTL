@@ -1,9 +1,6 @@
 /*
 问题：
  1、TinySTL::vector<test>A1_3;	      !!!0字节问题，需要处理!!!
- 2、TinySTL::vector<int>A2_3(10,2);  int类型出错.. 
-	->好像是因为两个int会自动匹配到vector(InputIterator first, InputIterator last) 
-	->想到了解决办法！ 更新 __type_traits， 增加一个is_Interger来判断是不是int型！
 */
 #include<iostream>
 
@@ -55,6 +52,10 @@ int main() {
 		cout << n << endl;
 	}
 	cout << "---------" << endl;
+	for (auto n : A2_2) 
+	{
+		cout << n << endl;
+	}
 
 	int array[3] = {1,2,3 };
 	TinySTL::vector<int> vec(array, array + 3);

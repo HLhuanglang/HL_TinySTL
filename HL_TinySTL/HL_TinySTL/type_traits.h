@@ -142,4 +142,57 @@ struct __type_traits<T*> {
 	typedef __true_type    has_trivial_destructor;
 	typedef __true_type    is_POD_type;
 };
+	//判断是否为 int 类型
+	template <class Type>
+	struct __is_integer {
+		typedef __false_type	is_integer;
+	};
+
+	template<> struct __is_integer<bool> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<char> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<signed char> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<unsigned char> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<short> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<unsigned short> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<int> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<unsigned int> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<long> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<unsigned long> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<long long> {
+		typedef __true_type		is_integer;
+	};
+
+	template<> struct __is_integer<unsigned long long> {
+		typedef __true_type		is_integer;
+	};
 #endif // !TYPE_TRAITS_H
