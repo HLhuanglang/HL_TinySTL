@@ -13,7 +13,7 @@
 namespace TinySTL {
 	/*****************************************************
 	名称：uninitialized_copy
-	作用：将[first,last) 复制到[result，result+(last-first) )
+	作用：将[first,last) 复制到[result，result+(last-first) ),返回复制结束的位置
 	*****************************************************/
 	template<typename InputIterator, typename ForwardIterator>
 	ForwardIterator _uninitialized_copy_aux(InputIterator first,InputIterator last,
@@ -29,7 +29,7 @@ namespace TinySTL {
 		ForwardIterator cur = result;
 		for (; first != last; ++first,++cur)
 			TinySTL::construct(&*cur, *first);
-		return result;
+		return cur;
 	}
 
 	template<typename InputIterator, typename ForwardIterator>
@@ -41,7 +41,7 @@ namespace TinySTL {
 
 	/***********************************************************************
 	名称：uninitialized_fill
-	作用：对给定的范围[first，last)，按值为x进行对象构造
+	作用：对给定的范围[first，last)，按值为x进行对象构造,无返回值
 	************************************************************************/
 	template<typename ForwardIterator,typename T>
 	void _uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T& value, __true_type) {
@@ -65,27 +65,28 @@ namespace TinySTL {
 
 	/**********************************************************************
 	名称：uninitialized_fill_n
-	作用：对[first，first+n*sizeof(T)）范围内进行n个相同对象的构造
+	作用：对[first，first+n*sizeof(T)）范围内进行n个相同对象的构造，返回填充结束的位置
 	***********************************************************************/
 	template<typename ForwardIterator, typename Size,typename T>
-	void _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __true_type) {
+	ForwardIterator _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __true_type) {
 		ForwardIterator cur = first;
 		for (; n>0; --n,++cur)
 			*cur = value;
+		return cur;
  	}
 
 	template<typename ForwardIterator , typename Size, typename T>
-	void _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __false_type) {
+	ForwardIterator _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __false_type) {
 		ForwardIterator cur = first;
 		for (; n > 0; --n, ++cur)
 			TinySTL::construct(&*cur, value);
+		return cur;
 	}
 
 	template<typename ForwardIterator, typename Size, typename T>
 	ForwardIterator uninitialized_fill_n(ForwardIterator first, Size n, const T& value) {
 		typedef typename __type_traits<iterator_traits<ForwardIterator>::value_type>::is_POD_type		IS_POD_TYPE;
-		_uninitialized_fill_n_aux(first, n, value, IS_POD_TYPE());
-		return first;
+		return _uninitialized_fill_n_aux(first, n, value, IS_POD_TYPE());
 	}
 
 } //namespace TinySTL
