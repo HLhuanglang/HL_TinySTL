@@ -5,7 +5,7 @@
 
 #ifndef ITERATOR_H
 #define ITERATOR_H
-#include<cstddef> //为了使用ptrdiff_t
+#include<cstddef> //为了使用ptrdiff_t(一个与机器相关的数据类型，ptrdiff_t类型变量通常用来保存两个指针减法操作的结果)
 namespace TinySTL {
 
 	//五种类型标签，用来萃取和函数重载
@@ -66,8 +66,8 @@ namespace TinySTL {
 	};
 
 
-	//用来帮助我们在自己的迭代器类中包含要求的类型别名
-	//class my_iterator： public iterator
+
+	//被继承，如 class ListIterator： public iterator<bidirectional_iterator_tag, T>
 	template<class Category,
 		class T,
 		class Distance = ptrdiff_t,
@@ -136,7 +136,133 @@ namespace TinySTL {
 		value_type(const Iterator&) {
 		return static_cast<typename iterator_traits<Iterator>::value_type*>(0);
 	}
+	//**********************************************************************************
+	//reverse_iterator
+	template<typename Iterator>
+	class reverse_iterator {
+	public:
+		typedef typename iterator_traits<Iterator>::iterator_category		iterator_category;
+		typedef typename iterator_traits<Iterator>::value_type					value_type;
+		typedef typename iterator_traits<Iterator>::difference_type			difference_type;
+		typedef typename iterator_traits<Iterator>::pointer						pointer;
+		typedef typename iterator_traits<Iterator>::reference					reference;
 
+		typedef Iterator																				iterator_type;
+		typedef reverse_iterator<Iterator>													self;
+	private:
+		Iterator current; //记对应的正向迭代器
+
+	public:
+		//构造函数
+		reverse_iterator() {}
+		explicit reverse_iterator(iterator_type i) : current(i) {}
+		reverse_iterator(const self& rhs) : current(rhs.current) {}
+
+	public:
+		//取出对应的正向迭代器
+		iterator_type base() const {
+			return current;
+		}
+		//重载操作符
+		reference operator*() const {
+			auto tmp = current;
+			return *(--tmp);
+		}
+		pointer operator->() const {
+			return &(operator*());
+		}
+		//前进++ 变为后退--
+		self& operator++() {
+			--current;
+			return *this;
+		}
+		self operator++(int) {
+			self tmp = *this;
+			--current;
+			return tmp;
+		}
+		//后退--变为前进++
+		self& operator--() {
+			++current;
+			return *this;
+		}
+		self operator--(int) {
+			self tmp = *this;
+			++current;
+			return tmp;
+		}
+
+		self&operator+=(difference_type n) {
+			current -= n;
+			return *this;
+		}
+		self operator+(difference_type n) const {
+			return self(current - n);
+		}
+		self&operator-=(difference_type n) const {
+			current += n;
+			return *this;
+		}
+
+		self operator-(difference_type n) const {
+			return self(current + n);
+		}
+		reference operator[](difference_type n)const {
+			return *(*this + n);
+		}
+
+		// 重载 operator-
+		template <class Iterator>
+		typename reverse_iterator<Iterator>::difference_type
+			operator-(const reverse_iterator<Iterator>& lhs,
+				const reverse_iterator<Iterator>& rhs)
+		{
+			return rhs.base() - lhs.base();
+		}
+
+		// 重载比较操作符
+		template <class Iterator>
+		bool operator==(const reverse_iterator<Iterator>& lhs,
+			const reverse_iterator<Iterator>& rhs)
+		{
+			return lhs.base() == rhs.base();
+		}
+
+		template <class Iterator>
+		bool operator<(const reverse_iterator<Iterator>& lhs,
+			const reverse_iterator<Iterator>& rhs)
+		{
+			return rhs.base() < lhs.base();
+		}
+
+		template <class Iterator>
+		bool operator!=(const reverse_iterator<Iterator>& lhs,
+			const reverse_iterator<Iterator>& rhs)
+		{
+			return !(lhs == rhs);
+		}
+
+		template <class Iterator>
+		bool operator>(const reverse_iterator<Iterator>& lhs,
+			const reverse_iterator<Iterator>& rhs)
+		{
+			return rhs < lhs;
+		}
+
+		template <class Iterator>
+		bool operator<=(const reverse_iterator<Iterator>& lhs,
+			const reverse_iterator<Iterator>& rhs)
+		{
+			return !(rhs < lhs);
+		}
+
+		template <class Iterator>
+		bool operator>=(const reverse_iterator<Iterator>& lhs,
+			const reverse_iterator<Iterator>& rhs)
+		{
+			return !(lhs < rhs);
+		}
+	};
 
 } //namespace TinySTL
 #endif // !ITERATOR_H
