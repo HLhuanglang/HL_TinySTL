@@ -102,38 +102,38 @@ namespace TinySTL
 	{
 		if (n == 0) //申请0字节 
 			return 0;
-		if (n > 128) 
+		if (n > size_t(__MAX_BYTES)) 
 		{
 			void *p = __alloc::allocate(n);
 			return p;
 		}
 		
-		obj_union *my_free_list;
+		obj_union * volatile* my_free_list;
 		obj_union  *result;
-		my_free_list = free_list[m_freelist_index(n)];
-		result = my_free_list;
+		my_free_list = free_list + m_freelist_index(n);
+		result = *my_free_list;
 		if (result == 0)
 		{
 			void* r = m_refill(m_round_up(n));
 			return r;
 		}
-		my_free_list = result->free_list_link;   //类似于链表的删除操作
+		*my_free_list = result->free_list_link;   //类似于链表的删除操作
 		return result;
 	}
 
 	//释放p指向的大小为n的空间，返回给free_list
 	void  alloc::deallocate(void *p, size_t n)
 	{
-		obj_union* my_free_list;
+		obj_union* volatile* my_free_list;
 		obj_union* q = reinterpret_cast<obj_union*>(p);
-		if (n > 128)
+		if (n > size_t(__MAX_BYTES))
 		{
 			__alloc::deallocate(p, n);
 			return;
 		}
-		my_free_list = free_list[m_freelist_index(n)];
-		q->free_list_link = my_free_list;
-		my_free_list = q;
+		my_free_list = free_list + m_freelist_index(n);
+		q->free_list_link = *my_free_list;
+		*my_free_list = q;
 	}
 
 	//重新分配空间
@@ -215,19 +215,18 @@ namespace TinySTL
 	//调用m_chunk_alloc从内存池中取得内存，划分成预设大小，并填充到free_list相应位置
 	void* alloc::m_refill(size_t n)  //被调用的时候，传入的n已经调整为8的倍数了
 	{
+		obj_union* volatile* my_free_list;
+		obj_union* result, *cur_obj, *next_obj;
 		size_t nobj = 20; //默认向内存池申请20块
 		char* chunk = m_chunk_alloc(n, nobj);   //chunk 如果是void，会导致 chunk+n无法转型
 
 		if (nobj == 1) //如果只申请到1块，就直接返回给调用者
 			return chunk;
-
-		obj_union* result, *cur_obj, *next_obj;
-
+		my_free_list = free_list + m_freelist_index(n);
 		result = (obj_union*)chunk; //第一块直接返回给调用者
 
 		//begin 对剩下的19块内存，按照具体大小进行划分
-		free_list[m_freelist_index(n)] = (obj_union*)(chunk + n);
-		next_obj = (obj_union*)(chunk + n);
+		*my_free_list = next_obj = (obj_union*)(chunk + n);
 		for (int i = 1; ; ++i)
 		{
 			cur_obj = next_obj;

@@ -110,9 +110,11 @@ namespace TinySTL {
 	private:
 		/********************************************************************************/
 		//helper functions
+				//只能把给定序列的内容复制到容器的内存起点位置，局限性有点大。。可以增加一个参数代表目的地
 		void allocate_and_fill_n(const size_type n, const value_type& value);
 		template<typename InputIterator>
 		void allocate_and_copy(InputIterator first, InputIterator last);
+
 		void destory_and_deallocate();
 		template<typename Integer>
 		void vector_aux(Integer n, Integer value, __true_type);
@@ -145,9 +147,9 @@ namespace TinySTL {
 	template<typename T, typename Alloc>
 	template<typename InputIterator>
 	void vector<T, Alloc>::allocate_and_copy(InputIterator first, InputIterator last) {
-		first_ = data_allocator::allocate(last - first); //自己多此一举 (last-first)/sizeof(InputIterator),两指针相减自动会除去类型单位
-		uninitialized_copy(first, last, first_);
-		last_ = end_ = first_ + (last - first);
+		this->first_ = data_allocator::allocate(last - first); //自己多此一举 (last-first)/sizeof(InputIterator),两指针相减自动会除去类型单位
+		uninitialized_copy(first, last, this->first_);
+		this->last_ = this->end_ =this->first_ + (last - first);
 	}
 
 	template<typename T, typename Alloc>
@@ -161,7 +163,7 @@ namespace TinySTL {
 	template<typename T, typename Alloc>
 	template<typename Integer>
 	void vector<T, Alloc>::vector_aux(Integer n, Integer value, __true_type) {
-		allocate_and_fill_n(n, value);
+		allocate_and_fill_n(n, value); 
 	}
 	template<typename T, typename Alloc>
 	template<typename InputIterator>
@@ -260,9 +262,7 @@ namespace TinySTL {
 	}
 	template<typename T, typename Alloc>
 	vector<T, Alloc>::vector() {
-		first_ = data_allocator::allocate();
-		last_ = first_;
-		end_ = last_;
+		allocate_and_fill_n(1, value_type());
 	}
 
 	template<typename T, typename Alloc>
@@ -286,7 +286,7 @@ namespace TinySTL {
 	template<typename T, typename Alloc>
 	vector<T, Alloc>::vector(const vector& v) {
 		//copy构造，深复制
-		allocate_and_copy(v.first_, v.last_);
+		allocate_and_copy(v.begin(), v.end());
 	}
 
 	template<typename T, typename Alloc>
@@ -301,7 +301,7 @@ namespace TinySTL {
 	template<typename T, typename Alloc>
 	vector<T, Alloc>	&vector<T, Alloc>::operator=(const vector& v) {
 		if (this != v) {
-			allocate_and_copy(v.first_, v.last_);
+			allocate_and_copy(v.first_, v.last_); //TO FIX
 		}
 		return *this;
 	}
@@ -309,7 +309,7 @@ namespace TinySTL {
 	template<typename T, typename Alloc>
 	vector<T, Alloc> &vector<T, Alloc>::operator=(vector&&v) {
 		if (this != v)
-			allocate_and_copy(v.first_, v.first_);
+			allocate_and_copy(v.first_, v.first_); //TO FIX
 		v.first_ = v.last_ = v.end_ = nullptr;
 	}
 	/********************************************************************************/
@@ -330,35 +330,38 @@ namespace TinySTL {
 			auto insert_length = n - size();
 			last_ = TinySTL::uninitialized_fill_n(last_, insert_length, val);
 		}
-		else if (n > capacity()) {
+		else if (n >= capacity()) {
+			size_type insert_length = n - size();
 			iterator new_first_ = data_allocator::allocate(n);
 			iterator new_last_ = TinySTL::uninitialized_copy(begin(), end(), new_first_);
-			size_type insert_length = n - size();
 			new_last_ = TinySTL::uninitialized_fill_n(new_last_, insert_length, val);
-			
-			destory_and_deallocate();
+
+			destory_and_deallocate(); //将旧的资源释放
 			first_ = new_first_;
 			last_ = new_last_;
-			end_ = first_ + n;
+			end_ = new_first_ + n;
 		}
 	}
 
 	template<typename T, typename Alloc>
 	void vector<T, Alloc>::reserve(size_type n) {
 		if (n > capacity()) {
-			iterator new_first_ = data_allocator::allocate(n); //申请后，new_first 和first_地址一样？？？
+			iterator new_first_ = data_allocator::allocate(n); //申请心内存为何会是返回first_的地址
 			iterator new_last_ = TinySTL::uninitialized_copy(begin(), end(), new_first_);
-			destory_and_deallocate();
+
+			destory_and_deallocate(); //将旧的资源释放
 			first_ = new_first_;
 			last_ = new_last_;
-			end_ = first_ + n;
+			end_ = new_first_ + n;
 		}
 	}
 
 	template<typename T, typename Alloc>
 	void vector<T, Alloc>::shrink_to_fit() {
 		//收缩容量到size()大小
-		data_allocator::deallocate(last_, end_ - last_);
+		if (last_ == end_)
+			return;
+		data_allocator::deallocate(last_, end_ - last_); //不需要析构，因为last_ ~ end_这段区间没有构造对象
 		end_ = last_;
 	}
 
@@ -427,7 +430,7 @@ namespace TinySTL {
 
 	template<typename T, typename Alloc>
 	bool vector<T, Alloc>::operator!=(const vector &v) const {
-		return (*this == v);
+		return (!(*this == v));
 	}
 
 }//namaspace TinySTL
