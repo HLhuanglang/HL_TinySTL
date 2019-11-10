@@ -22,11 +22,6 @@ note:
 namespace TinySTL {
 	template<typename T, typename Alloc = allocator<T>>
 	class vector {
-	private:
-		iterator first_;
-		iterator last_;
-		iterator end_;
-		typedef Alloc data_allocator;
 	public:
 		//类型参数，可以直接使用的，如vector<Test>::pointer A; A 就是一个指针
 		typedef T						value_type;
@@ -39,12 +34,16 @@ namespace TinySTL {
 		typedef const T&		const_reference;
 		typedef size_t				size_type;
 		typedef ptrdiff_t			difference_type;
+	private:
+		iterator first_;
+		iterator last_;
+		iterator end_;
+		typedef Alloc data_allocator;
 
 	public:
 		/********************************************************************************/
 		//对象构造、析构相关
-		vector() : first_(nullptr), last_(nullptr), end_(nullptr) {
-		}
+		vector();
 		explicit vector(const size_type n);
 		vector(const size_type n, const value_type& value);
 		template<typename InputIterator>
@@ -131,7 +130,7 @@ namespace TinySTL {
 		void reallocate_and_fill_n(iterator position, size_type n, const value_type&val);
 		template<typename InputIterator>
 		void reallocate_and_copy(iterator position, InputIterator first, InputIterator last);
-		size_type get_newsize(size_type n)const;
+		size_type get_newsize(size_type n);
 	}; //end of class vector
 
 	/********************************************************************************/
@@ -172,13 +171,15 @@ namespace TinySTL {
 
 	template<typename T, typename Alloc>
 	void vector<T, Alloc>::_insert(iterator position, size_type n, const value_type &val, __true_type) {
-		insert_aux(position, n, val, typename __is_integer<value_type>::type());
+		typedef typename __is_integer<value_type>::is_integer IS_INTEGER;
+		insert_aux(position, n, val, IS_INTEGER());
 	}
 
 	template<typename T, typename Alloc>
 	template<typename InputIterator>
 	void vector<T, Alloc>::_insert(iterator position, InputIterator first, InputIterator last, __false_type) {
-		insert_aux(position, first, last, typename __is_integer<InputIterator>::type());
+		typedef typename __is_integer<value_type>::is_integer IS_INTEGER;
+		insert_aux(position, first, last, IS_INTEGER());
 	}
 	template<typename T, typename Alloc>
 	void vector<T, Alloc>::insert_aux(iterator position, size_type n, const value_type &val, __true_type) {
@@ -217,8 +218,8 @@ namespace TinySTL {
 	template<typename T, typename Alloc>
 	void vector<T, Alloc>::reallocate_and_fill_n(iterator position, size_type n, const value_type&val) {
 		difference_type new_size = get_newsize(n);
-		auto new_first_ = data_allocator::allocate(new_size);
-		auto new_last_ = uninitialized_copy(begin(), position, new_first_);
+		iterator new_first_ = data_allocator::allocate(new_size);
+		iterator new_last_ = uninitialized_copy(begin(), position, new_first_);
 		new_last_ = uninitialized_fill_n(new_last_, n, val);
 		new_last_ = uninitialized_copy(position, end(), new_last_);
 
@@ -232,8 +233,8 @@ namespace TinySTL {
 	template<typename InputIterator>
 	void vector<T, Alloc>::reallocate_and_copy(iterator position, InputIterator first, InputIterator last) {
 		difference_type new_size = last_ - first_;
-		auto new_first_ = data_allocator::allocate(new_size);
-		auto new_last_ = uninitialized_copy(begin(), position, new_first_);
+		iterator new_first_ = data_allocator::allocate(new_size);
+		iterator new_last_ = uninitialized_copy(begin(), position, new_first_);
 		new_last_ = uninitialized_copy(first, last, new_last_);
 		new_last_ = uninitialized_copy(position, end(), new_last_);
 
@@ -244,10 +245,11 @@ namespace TinySTL {
 	}
 
 	template<typename T, typename Alloc>
-	vector<T,Alloc>::size_type vector<T, Alloc>::get_newsize(size_type n) const {
-		auto old_size = end_ - first_;
-		auto new_size = TinySTL::max(old_size, n);
-		return new_size = ( (old_size != 0) ? (old_size + new_size) : new_size);
+	typename vector<T,Alloc>::size_type vector<T, Alloc>::get_newsize(size_type n) {
+		size_type old_size = end_ - first_;
+		auto res = TinySTL::max(old_size, n);
+		size_type new_size = ( (old_size != 0) ? (old_size + res) : n);
+		return new_size;
 	}
 	/********************************************************************************/
 	//构造、析构、复制等函数实现
@@ -256,6 +258,13 @@ namespace TinySTL {
 		data_allocator::destory(first_, last_);
 		data_allocator::deallocate(first_, end_ - first_);
 	}
+	template<typename T, typename Alloc>
+	vector<T, Alloc>::vector() {
+		first_ = data_allocator::allocate();
+		last_ = first_;
+		end_ = last_;
+	}
+
 	template<typename T, typename Alloc>
 	vector<T, Alloc>::vector(const size_type n) {
 		allocate_and_fill_n(n, value_type());
@@ -312,7 +321,7 @@ namespace TinySTL {
 	/********************************************************************************/
 	//容量相关
 	template<typename T, typename Alloc>
-	void vector<T, Alloc>::resize(size_type n, value_type val = value_type()) {
+	void vector<T, Alloc>::resize(size_type n, value_type val){
 		if (n < size()) {
 			data_allocator::destory(first_ + n, last_);
 			last_ = first_ + n;
@@ -322,27 +331,26 @@ namespace TinySTL {
 			last_ = TinySTL::uninitialized_fill_n(last_, insert_length, val);
 		}
 		else if (n > capacity()) {
-			auto new_first_ = data_allocator::allocate(n);
-			auto new_last_ = TinySTL::uninitialized_copy(this->begin(), this->end, new_first_);
-			auto insert_length = n - size();
+			iterator new_first_ = data_allocator::allocate(n);
+			iterator new_last_ = TinySTL::uninitialized_copy(begin(), end(), new_first_);
+			size_type insert_length = n - size();
 			new_last_ = TinySTL::uninitialized_fill_n(new_last_, insert_length, val);
 			
 			destory_and_deallocate();
 			first_ = new_first_;
 			last_ = new_last_;
 			end_ = first_ + n;
-
 		}
 	}
 
 	template<typename T, typename Alloc>
 	void vector<T, Alloc>::reserve(size_type n) {
 		if (n > capacity()) {
-			auto new_first_ = data_allocator::allocate(n);
-			TinySTL::uninitialized_copy(begin(), end(), new_first_);
+			iterator new_first_ = data_allocator::allocate(n); //申请后，new_first 和first_地址一样？？？
+			iterator new_last_ = TinySTL::uninitialized_copy(begin(), end(), new_first_);
 			destory_and_deallocate();
 			first_ = new_first_;
-			last_ = first_ + n;
+			last_ = new_last_;
 			end_ = first_ + n;
 		}
 	}
@@ -364,7 +372,7 @@ namespace TinySTL {
 
 	template<typename T, typename Alloc>
 	void vector<T, Alloc>::swap( vector& v) {
-		if (this != v) {
+		if (*this != v) {
 			TinySTL::swap(this->first_, v.first_);
 			TinySTL::swap(this->last_, v.last_);
 			TinySTL::swap(this->end_, v.end_);
@@ -383,22 +391,44 @@ namespace TinySTL {
 	}
 	
 	template<typename T, typename Alloc>
-	vector<T, Alloc>::iterator vector<T, Alloc>::insert(iterator position, const value_type& val) {
+	typename vector<T, Alloc>::iterator vector<T, Alloc>::insert(iterator position, const value_type& val) {
 		const auto index = position - begin();
-		_insert(position, 1, val, typename __is_integer<value_type>::type()); //
+		typedef typename __is_integer<value_type>::is_integer IS_INTEGER;
+		_insert(position, 1, val, IS_INTEGER()); //
 		return begin() + index;
 	}
 
 	template<typename T, typename Alloc>
 	template<typename InputIterator>
 	void vector<T, Alloc>::insert(iterator position, InputIterator first, InputIterator last) {
-		//typedef typename __is_integer<InputIterator>::is_integer IS_INTEGER;
-		insert_aux(position, first, last, typename __is_integer<InputIterator>::type() /*IS_INTEGER()*/ );
+		typedef typename __is_integer<InputIterator>::is_integer IS_INTEGER;
+		insert_aux(position, first, last, IS_INTEGER());
 	}
 
 	template<typename T, typename Alloc>
 	void vector<T,Alloc>::insert(iterator position, size_type n, const value_type& val){
 		insert_aux(position, n, val, typename __is_integer<value_type>::type()); //这里<>中size_type 和value_type都一样
 	}
+
+	/********************************************************************************/
+	//比较操作
+	template<typename T, typename Alloc>
+	bool vector<T, Alloc>::operator==(const vector &v) const {
+		if (size() != v.size())
+			return false;
+		auto self = first_;
+		auto other = v.first_;
+		for (; self != last_ && other != v.last_; ++self, ++other) {
+			if (*self != *other)
+				return false;
+		}
+		return true;
+	}
+
+	template<typename T, typename Alloc>
+	bool vector<T, Alloc>::operator!=(const vector &v) const {
+		return (*this == v);
+	}
+
 }//namaspace TinySTL
 #endif // !VECTOR_H
