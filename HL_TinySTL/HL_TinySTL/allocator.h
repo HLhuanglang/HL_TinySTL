@@ -43,7 +43,8 @@ T* allocator<T>::allocate() {
 
 template<typename T>
 T* allocator<T>::allocate(size_t n) {
-	STL_DEBUG(n != 0);
+	if (n == 0)
+		std::cerr << "申请内存需大于0";
 	return static_cast<T*>(TinySTL::alloc::allocate(n * sizeof(T)));
 }
 
@@ -54,7 +55,7 @@ void allocator<T>::deallocate(T *ptr){
 
 template<typename T>
 void allocator<T>::deallocate(T *ptr, size_t n) {
-	STL_DEBUG(n != 0);
+	if (n == 0) return;
 	TinySTL::alloc::deallocate(static_cast<void*>(ptr), sizeof(T)*n);
 }
 

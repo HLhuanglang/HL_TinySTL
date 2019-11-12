@@ -1,6 +1,8 @@
 /*********************************************************
 名称：uninitialized.h
 作用：提供内存处理工具函数
+注意：
+	①传入的first、last都是形参，所以对它们进行移动无影响
 **********************************************************/
 #ifndef UNINITIALIZED_H
 #define UNINITIALIZED_H
@@ -26,10 +28,11 @@ namespace TinySTL {
 	template<typename InputIterator, typename ForwardIterator>
 	ForwardIterator _uninitialized_copy_aux(InputIterator first, InputIterator last,
 		ForwardIterator result, __false_type) {
-		ForwardIterator cur = result;
-		for (; first != last; ++first,++cur)
-			TinySTL::construct(&*cur, *first);
-		return cur;
+		int i = 0;
+		for (; first != last; ++first, ++i) {
+			construct((result + i), *first);
+		}
+		return (result + i);
 	}
 
 	template<typename InputIterator, typename ForwardIterator>
@@ -51,9 +54,8 @@ namespace TinySTL {
 	}
 	template<typename ForwardIterator, typename T>
 	void _uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T& value, __false_type) {
-		ForwardIterator cur = first;  //不能更改来源范围的迭代器
-		for (; cur != last; ++cur)
-			TinySTL::construct(&*cur, value);
+		for (; first != last; ++first)
+			TinySTL::construct(first, value);
 	}
 
 	template<typename ForwardIterator, typename T>
@@ -69,18 +71,16 @@ namespace TinySTL {
 	***********************************************************************/
 	template<typename ForwardIterator, typename Size,typename T>
 	ForwardIterator _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __true_type) {
-		ForwardIterator cur = first;
-		for (; n>0; --n,++cur)
-			*cur = value;
-		return cur;
+		return std::fill_n(first, n, value);
  	}
 
 	template<typename ForwardIterator , typename Size, typename T>
 	ForwardIterator _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __false_type) {
-		ForwardIterator cur = first;
-		for (; n > 0; --n, ++cur)
-			TinySTL::construct(&*cur, value);
-		return cur;
+		int i = 0;
+		for (; i != n; ++i) {
+			construct((T*)(first + i), value);
+		}
+		return (first + i);
 	}
 
 	template<typename ForwardIterator, typename Size, typename T>
