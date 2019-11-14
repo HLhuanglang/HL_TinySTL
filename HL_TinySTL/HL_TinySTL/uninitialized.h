@@ -49,8 +49,7 @@ namespace TinySTL {
 	template<typename ForwardIterator,typename T>
 	void _uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T& value, __true_type) {
 		//后续使用fill算法进行替换
-		for (; first != last; ++first)
-			*first = value;
+		TinySTL::fill(first, last, value);
 	}
 	template<typename ForwardIterator, typename T>
 	void _uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T& value, __false_type) {
@@ -71,7 +70,7 @@ namespace TinySTL {
 	***********************************************************************/
 	template<typename ForwardIterator, typename Size,typename T>
 	ForwardIterator _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& value, __true_type) {
-		return std::fill_n(first, n, value);
+		return TinySTL::fill_n(first, n, value);
  	}
 
 	template<typename ForwardIterator , typename Size, typename T>
