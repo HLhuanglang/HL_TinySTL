@@ -5,6 +5,7 @@
 #include"iterator.h"
 #include"type_traits.h"
 #include"utility.h"
+#include"functional.h"
 
 namespace TinySTL {
 	
@@ -88,6 +89,8 @@ namespace TinySTL {
 		template<typename InputIterator>
 		void insert_aux(iterator position, InputIterator first, InputIterator last,__false_type);
 
+		void ulink_node(node_pointer first, node_pointer last);
+		void link_node(node_pointer position, node_pointer first, node_pointer last);
 	public:
 		/********************************************************************************/
 		//对象构造、析构相关
@@ -205,6 +208,23 @@ namespace TinySTL {
 		}
 		insert(position, *last);
 	}
+
+	//将结点[first,last]与容器断开
+	template<typename T>
+	void list<T>::ulink_node(node_pointer first, node_pointer last) {
+		first->pre->next = last->next;
+		last->next->pre = first->pre;
+	}
+
+	//将position出链接[first，last]的结点
+	template<typename T>
+	void list<T>::link_node(node_pointer position, node_pointer first, node_pointer last) {
+		position->pre->next = first;
+		first->pre = position->pre;
+		last->next = position;
+		position->pre = last;
+	}
+
 	/********************************************************************************/
 	//构造、析构、复制等函数实现
 	template<typename T>
@@ -380,6 +400,51 @@ namespace TinySTL {
 	template<typename InputIterator>
 	void list<T>::insert(iterator position, InputIterator first, InputIterator last) {
 		insert_aux(position, first, last, typename __is_integer<InputIterator>::is_integer());
+	}
+
+	template<typename T>
+	void list<T>::merge(list & other) {
+			//默认情况是升序
+		merge(other,TinySTL::less<T>)
+	}
+
+	template<typename T>
+	template<typename Compare>
+	void list<T>::merge(list&other, Compare comp) {
+		//merge后会掠夺other的结点
+		if (this != &x) {
+			iterator first = begin();
+			iterator last = end();
+			iterator first_other = other.begin();
+			iterator last_other = other.end();
+
+			while (first != last && first_other != last_other) {
+				if (comp(*first, *first_other)) {
+					iterator next = first_other;
+					++next;
+					for (; next != last_other && comp(*next, *first); ++next) //一直比较，直到出现不满足comp( )的结点
+						;
+					auto f = first_other.p;
+					auto l = next.p->pre;
+					first_other = next;
+
+					other.ulink_node(f, l);
+					link_node(first.p, f, l);
+					++first;
+				}
+				else {
+					++first;
+				}
+
+				//拼接剩余结点
+				if (first_other != last_other) {
+					auto f = first_other.p;
+					auto l = last_other.p;
+					other.ulink_node(f, l);
+					link_node(last.p, f, l);
+				}
+			}
+		}
 	}
 
 } //namespace TinySTL
