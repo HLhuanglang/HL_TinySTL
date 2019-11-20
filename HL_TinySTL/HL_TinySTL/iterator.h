@@ -136,6 +136,35 @@ namespace TinySTL {
 		value_type(const Iterator&) {
 		return static_cast<typename iterator_traits<Iterator>::value_type*>(0);
 	}
+
+	//以下函数用于计算迭代器之间的距离
+	template<class InputIterator>
+	typename iterator_traits<InputIterator>::difference_type
+		distance(InputIterator first, InputIterator last) {
+		return distance_dispatch(first, last, iterator_category(first));
+	}
+
+		//distance的input_iterator_tag版本
+		template<class InputIterator>
+		typename iterator_traits<InputIterator>::difference_type
+			distance_dispatch(InputIterator first, InputIterator last, input_iterator_tag) {
+			typename iterator_traits<InputIterator>::difference_type n = 0;
+			while (first != last) {
+				++first;
+				++n;
+			}
+			return n;
+		}
+
+		//distance的random_access_iterator_tag版本
+		template <class RandomIter>
+		typename iterator_traits<RandomIter>::difference_type
+			distance_dispatch(RandomIter first, RandomIter last,
+				random_access_iterator_tag)
+		{
+			return last - first;
+		}
+
 	//**********************************************************************************
 	//reverse_iterator
 	template<class Iterator>
