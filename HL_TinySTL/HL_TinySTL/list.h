@@ -1,3 +1,9 @@
+/*****************************************************************************
+名称：list.h
+注意：
+	链表是双向环形链表，为了满足前闭后开原则，增设首元结点
+*****************************************************************************/
+
 #ifndef LIST_H
 #define LIST_H
 
@@ -6,91 +12,204 @@
 #include"type_traits.h"
 #include"utility.h"
 #include"functional.h"
+#include"exceptdef.h"
+
 
 namespace TinySTL {
+
+	template<class T> class list_node_base;
+	template<class T> class list_node;
 	
-	//链表结点
-	template<typename T>
-	struct list_node {
-		T data;
-		list_node<T>* pre;
-		list_node<T>* next;
+	/**********************************************************list结点设计******************************************************/
+	template<class T>
+	class list_node_base
+	{
 	public:
-		list_node() : data(0), pre(nullptr), next(nullptr) {}
-		list_node(const T& val) : data(val), pre(nullptr), next(nullptr) {}
-		bool operator==(const list_node& n) {
-			return data == n.data && pre == n.pre && next == n.next;
+		typedef list_node_base<T>*	base_ptr;
+		typedef list_node<T>*			node_ptr;
+		
+			//指针域
+		base_ptr prev;
+		base_ptr next;
+
+		list_node_base() = default;
+
+		base_ptr self() {
+				//将这个list_node_base对象的地址 转换成一个指针类型的地址
+			return static_cast<base_ptr>(&*this);
+		}
+		void unlink() {
+				//空结点首尾指针都指向自己
+			prev = next = self();
+		}
+		node_ptr as_node() {
+				//基类指针转换成派生类指针，使其可以访问派生类新增的成员
+			return static_cast<node_ptr>(self());
 		}
 	};
 
-	//链表迭代器
-	template<typename T>
-	class list_iterator : public iterator<bidirectional_iterator_tag,T> {
+	template<class T>
+	class list_node : public list_node_base<T>
+	{
 	public:
-		typedef list_node<T>* nodeptr;
-		nodeptr p;
-	public:
-		list_iterator& operator++() {
-			p = p->next;
+		typedef list_node_base<T>*	base_ptr;
+		typedef list_node<T>*			node_ptr;
+			
+			//值域
+		T value;
+
+		list_node() = default;
+		list_node(const T&val) : value(val) {}
+
+		node_ptr self() {
+			return static_cast<node_ptr>(&*this);
+		}
+		base_ptr as_base() {
+			//派生类转换成基类指针，去除了指向value的能力
+			return static_cast<base_ptr>(&*this);
+		}
+	};
+
+	/**********************************************************list迭代器设计*****************************************************/
+	//const迭代器和非const迭代器，无法直接用强制转换实现。因为内部操作是不同的
+
+	template<class  T>
+	class list_iterator : public TinySTL::iterator<TinySTL::bidirectional_iterator_tag, T> {
+		typedef T		value_type;
+		typedef T*	pointer;
+		typedef T&	reference;
+		typedef list_node_base<T>*	base_ptr;
+		typedef list_node<T>*			node_ptr;
+		typedef list_iterator<T>	self;
+
+		base_ptr node_;	//指向结点
+
+		//构造函数
+		list_iterator() = default;
+		list_iterator(base_ptr x) : node_(x) {}
+		list_iterator(node_ptr x): node_(x->as_base()){}
+		list_iterator(const list_iterator& rhs) : node_(rhs.node_) {}
+
+		//重载操作符
+		reference operator*() const { return  node_->as_node()->value; }
+		pointer		operator->() const { return &(operator*()); }
+		
+		self& operator++() {
+			STL_DEBUG(node_ != nullptr);
+			node_ = node_->next;
 			return *this;
 		}
-		list_iterator& operator++(int) {
-			auto tmp = *this;
+
+		self operator++(int) {
+			self tmp = *this;
 			++*this;
 			return tmp;
 		}
-		list_iterator& operator--() {
-			p = p->pre;
+
+		self& operator--() {
+			STL_DEBUG(node_ != nullptr);
+			node_ = node_->prev;
 			return *this;
 		}
-		list_iterator& operator--(int) {
-			auto tmp = *this;
+
+		self operator--(int) {
+			self tmp = *this;
 			--*this;
 			return tmp;
 		}
-		T& operator*() { return p->data; }
-		T* operator->() { return &(operator*()); }
 
-		//以全局函数重载
-		template<typename T>
-		friend bool operator==(const list_iterator<T>& lhs, const list_iterator<T>&rhs) {
-			return lhs.p == rhs.p; //这里涉及到结点的比较
-		}
-		template<typename T>
-		friend bool operator!=(const list_iterator<T>& lhs, const list_iterator<T>&rhs) {
-			return !(lhs.p == rhs.p); //这里涉及到结点的比较
-		}
+		//重载比较运算符
+		bool operator ==(const self& rhs) const { return node_ == rhs.node_; }
+		bool operator !=(const self& rhs) const { return node_ != rhs.node_; }
 	};
 
-	template<typename T>
+	template <class T>
+	struct list_const_iterator : public iterator<bidirectional_iterator_tag, T>
+	{
+		typedef T                                 value_type;
+		typedef const T*                          pointer;
+		typedef const T&                          reference;
+		typedef list_node_base<T>*	base_ptr;
+		typedef list_node<T>*			node_ptr;
+		typedef list_const_iterator<T>            self;
+
+		base_ptr node_;
+
+		list_const_iterator() = default;
+		list_const_iterator(base_ptr x) : node_(x) {}
+		list_const_iterator(node_ptr x) : node_(x->as_base()) {}
+		list_const_iterator(const list_iterator<T>& rhs) : node_(rhs.node_) {}
+		list_const_iterator(const list_const_iterator& rhs) : node_(rhs.node_) {}
+
+		reference operator*()  const { return node_->as_node()->value; }
+		pointer   operator->() const { return &(operator*()); }
+
+		self& operator++()
+		{
+			STL_DEBUG(node_ != nullptr);
+			node_ = node_->next;
+			return *this;
+		}
+		self operator++(int)
+		{
+			self tmp = *this;
+			++*this;
+			return tmp;
+		}
+		self& operator--()
+		{
+			STL_DEBUG(node_ != nullptr);
+			node_ = node_->prev;
+			return *this;
+		}
+		self operator--(int)
+		{
+			self tmp = *this;
+			--*this;
+			return tmp;
+		}
+
+		// 重载比较操作符
+		bool operator==(const self& rhs) const { return node_ == rhs.node_; }
+		bool operator!=(const self& rhs) const { return node_ != rhs.node_; }
+	};
+
+	/**********************************************************list容器结构设计******************************************************/
+	template<class T>
 	class list {
 	public:
-		typedef T		value_type;
-		typedef list_iterator<T> iterator;
-		typedef list_iterator<const T> const_iterator;
-		typedef reverse_iterator<iterator>	 reverse_iterator;
-		typedef T&	reference;
-		typedef size_t size_type;
+		typedef	TinySTL::allocator<T>									allocator_type;		//用于提取allocator的一些型别定义
+		typedef	TinySTL::allocator<T>									data_allocator;		//用于对象构造
+		typedef	TinySTL::allocator<list_node<T>>				node_allocator;	//申请list_node结点
+		typedef	TinySTL::allocator<list_node_base<T>>		base_allocaror;		//申请list_node_base结点，作为首元结点
+
+		//list内嵌型别定义
+		typedef typename allocator_type::value_type			value_type;
+		typedef typename allocator_type::pointer					pointer;
+		typedef typename allocator_type::const_pointer		const_pointer;
+		typedef typename allocator_type::reference				reference;
+		typedef typename allocator_type::const_reference	const_reference;
+		typedef typename allocator_type::size_type				size_type;
+		typedef typename allocator_type::difference_type		difference_type;
+
+		//迭代器定义
+		typedef list_iterator<T>					iterator;
+		typedef list_const_iterator<T>		const_iterator;
+		typedef TinySTL::reverse_iterator<iterator>				reverse_iterator;
+		typedef TinySTL::reverse_iterator<const_iterator>		const_reverse_iterator;
+
+		//内部结点指针定义
+		typedef list_node_base<T>*	base_ptr;
+		typedef list_node<T>*			node_ptr;
+
 	private:
-		typedef allocator<list_node<T>>		node_allocator;
-		typedef list_node<T>*						node_pointer;
-		iterator		head;
-		iterator		tail;
+		base_ptr	node_;	//指向 为了满足前闭后开原则设置的结点 的指针
+		size_type	size_;	//链表结点个数
+
 	private:
 		//helper function
-		node_pointer create_new_node(const value_type &val = value_type());
-		void delete_node(node_pointer p);
-		
-		void construct_aux(size_type n, const value_type& val, __true_type);
-		template<typename InputIterator>
-		void construct_aux(InputIterator first, InputIterator last, __false_type);
 
-		void insert_aux(iterator position, size_type n, const value_type& val, __true_type);
-		template<typename InputIterator>
-		void insert_aux(iterator position, InputIterator first, InputIterator last,__false_type);
-
-		void ulink_node(node_pointer first, node_pointer last);
-		void link_node(node_pointer position, node_pointer first, node_pointer last);
+	
 	public:
 		/********************************************************************************/
 		//对象构造、析构相关
@@ -101,24 +220,24 @@ namespace TinySTL {
 		list(InputIterator first, InputIterator last);
 		list(const list& other);
 		~list();
-		
+
 		/********************************************************************************/
 		//迭代器相关
-		iterator begin() { return head; }
-		iterator end() { return tail; }
+		iterator begin();
+		iterator end();
 
 		/********************************************************************************/
 		//容量相关相关
-		bool empty() { return head == tail; }
+		bool empty();
 		size_type size() const;
 		void resize(size_type _Newsize);
 		void resize(size_type _Newsize, const value_type& val);
-		
+
 		/********************************************************************************/
 		//元素访问相关
-		reference front() { return head.p->data; }
-		reference back() { return tail.p->data; }
-		
+		reference front();
+		reference back();
+
 		/********************************************************************************/
 		//元素修改相关相关
 		void push_back(const value_type& val);
@@ -126,14 +245,17 @@ namespace TinySTL {
 		void pop_back();
 		void pop_front();
 
-		void clear();
-		void reverse();
-		void swap(list& other);
-		
 		iterator insert(iterator position, const value_type& val);
 		void insert(iterator position, size_type n, const value_type& val);
 		template<typename InputIterator>
 		void insert(iterator position, InputIterator first, InputIterator last);
+
+		void splice(iterator position, list&other);
+		void splice(iterator position, list& other, iterator i);
+		void splice(iterator position, list& other, iterator first, iterator last);
+
+		iterator erase(const_iterator pos);
+		iterator erase(const_iterator first, const_iterator last);
 
 		void merge(list &other);
 		template<typename Compare>
@@ -143,309 +265,19 @@ namespace TinySTL {
 		template<typename Predicate>
 		void remove_if(Predicate pred);
 
-		void sort();
-		template<typename Compare>
-		void sort(Compare comp);
-
-		void splice(iterator position, list&other);
-		void splice(iterator position, list& other, iterator i);
-		void splice(iterator position, list& other, iterator first, iterator last);
-		
 		void unique();
 		template<typename BinaryPredicate>
 		void unqiue(BinaryPredicate);
+
+		void clear();
+		void reverse();
+		void swap(list& other);
+		void sort();
+		template<typename Compare>
+		void sort(Compare comp);
 	}; //end of class
 
-	
-	/********************************************************************************/
-	//helper function
-	template<typename T>
-	typename list<T>::node_pointer list<T>::create_new_node(const value_type& val) {
-		node_pointer tmp = node_allocator::allocate();
-		node_allocator::construct(tmp, list_node<value_type>(val));
-		return tmp;
-	}
 
-	template<typename T>
-	void list<T>::delete_node(node_pointer p) {
-		p->pre = p->next = nullptr;
-		node_allocator::destory(p);
-		node_allocator::deallocate(p);
-	}
-
-	template<typename T>
-	void list<T>::construct_aux(size_type n, const value_type &val, __true_type) {
-		//是n个value_type类型的数据
-		head.p = create_new_node();
-		tail.p = head.p;
-		while (n--) {
-			push_back(val);
-		}
-	}
-	template<typename T>
-	template<typename InputIterator>
-	void list<T>::construct_aux(InputIterator first, InputIterator last, __false_type) {
-		//是根据一段序列进行构造		
-		head.p = create_new_node();
-		tail.p = head.p;
-		for (; first != last; first++) {
-			push_back(*first);
-		}
-	}
-
-	template<typename T>
-	void list<T>::insert_aux(iterator position, size_type n, const value_type &val, __true_type) {
-		while (n--) {
-			position= insert(position, val);
-		}
-	}
-
-	template<typename T>
-	template<typename InputIterator>
-	void list<T>::insert_aux(iterator position, InputIterator first, InputIterator last, __false_type) {
-		for (--last; first != last; --last) {
-			position = insert(position, *last);
-		}
-		insert(position, *last);
-	}
-
-	//将结点[first,last]与容器断开
-	template<typename T>
-	void list<T>::ulink_node(node_pointer first, node_pointer last) {
-		first->pre->next = last->next;
-		last->next->pre = first->pre;
-	}
-
-	//将position出链接[first，last]的结点
-	template<typename T>
-	void list<T>::link_node(node_pointer position, node_pointer first, node_pointer last) {
-		position->pre->next = first;
-		first->pre = position->pre;
-		last->next = position;
-		position->pre = last;
-	}
-
-	/********************************************************************************/
-	//构造、析构、复制等函数实现
-	template<typename T>
-	list<T>::~list() {
-		//从头开始析构
-		for (; head!= tail;) {
-			iterator tmp = head++;
-			delete_node(tmp.p);
-		}
-		//剩下最后一个空间结点
-		delete_node(tail.p);
-	}
-
-	template<typename T>
-	list<T>::list() {
-		head.p = create_new_node();
-		tail.p = head.p;
-	}
-
-	template<typename T>
-	list<T>::list(size_type n) {
-		if (n == 0)
-			list();
-		head.p = tail.p = create_new_node();
-		while(n--){
-			push_back(value_type());
-		}
-	}
-
-	template<typename T>
-	list<T>::list(size_type n, const value_type& val) {
-		typedef typename __is_integer<size_type>::is_integer IS_INTEGER;
-		construct_aux(n, val, IS_INTEGER());
-	}
-
-	template<typename T>
-	template<typename InputIterator>
-	list<T>::list(InputIterator first, InputIterator last) {
-		typedef typename __is_integer<InputIterator>::is_integer IS_INTEGER;
-		construct_aux(first, last, IS_INTEGER());
-	}
-
-	template<typename T>
-	list<T>::list(const list& other) {
-		head.p = tail.p = create_new_node();
-		for (node_pointer node = other.head.p; node != other.tail.p; node = node->next) {
-			push_back(node->data);
-		}
-	}
-	/********************************************************************************/
-	//容量相关相关
-	template<typename T>
-	typename list<T>::size_type list<T>::size() const {
-		size_type count=0;
-		auto tmp = head;
-		while (tmp!= tail) {
-			count++;
-			tmp++;
-		}
-		return count;
-	}
-
-	template<typename T>
-	void list<T>::resize(size_type _Newsize) {
-		resize(_Newsize, value_type());
-	}
-
-	template<typename T>
-	void list<T>::resize(size_type _Newsize, const value_type&val){
-		auto _Oldsize = size();
-		if (_Newsize > _Oldsize) {
-			auto size_to_add = _Newsize - _Oldsize;
-			while (size_to_add--)
-				push_back(val);
-		}
-		else {
-			auto size_to_delete = _Oldsize - _Newsize;
-			while (size_to_delete--)
-				pop_back();
-		}
-	}
-
-	/********************************************************************************/
-	//元素修改相关相关
-	template<typename T>
-	void list<T>::push_back(const value_type& val) {
-		node_pointer new_node = create_new_node();
-		tail.p->data = val;
-		tail.p->next = new_node;
-		new_node->pre = tail.p;
-		tail.p = new_node;
-	}
-
-	template<typename T>
-	void list<T>::push_front(const value_type& val){
-		node_pointer new_head = create_new_node(val);
-		head.p->pre = new_head;
-		new_head->next = head.p;
-		head.p = new_head;
-	}
-
-	template<typename T>
-	void list<T>::pop_back() {
-		//肯定要保存末尾后一个空结点
-		node_pointer tmp = tail.p->pre;
-		tmp->pre->next = tail.p;
-		tail.p->pre = tmp->pre;
-		delete_node(tmp);
-	}
-
-	template<typename T>
-	void list<T>::pop_front() {
-		iterator old_head = head;
-		head++;
-		delete_node(old_head.p);
-	}
-
-	template<typename T>
-	void list<T>::clear() {
-		//删除所有结点
-		while (head != tail) {
-			iterator tmp = head++;
-			delete_node(tmp.p);
-		}
-	}
-
-	template<typename T>
-	void list<T>::reverse() {
-		//链表反转，可以用栈，用前插尾的方式
-		if (empty() || head.p->next ==tail.p)  //后者条件表示只有一个结点，因为有一个伪结点
-			return;
-		node_pointer real_head = tail.p->pre;
-		while(head.p != real_head){
-			iterator curr_head = head++;
-			curr_head.p->next->pre = nullptr;
-			curr_head.p->next = real_head->next;
-			real_head->next->pre = curr_head.p;
-			real_head->next = curr_head.p;
-			curr_head.p->pre = real_head;
-		}
-	}
-
-	template<typename T>
-	void list<T>::swap(list& other) {
-		TinySTL::swap(head.p, other.head.p);
-		TinySTL::swap(tail.p, other.tail.p);
-	}
-
-	template<typename T>
-	typename list<T>::iterator list<T>::insert(iterator position, const value_type& val) {
-		if (position == head) {
-			push_front(val);
-			return head;
-		}
-		else if(position ==tail) {
-			push_back(val);
-			return position;
-		}
-		node_pointer new_node = create_new_node(val);
-		new_node->next = position.p;
-		position.p->pre = new_node;
-		position.p->pre->next = new_node;
-		new_node->pre = position.p->pre;
-		return iterator(new_node);
-	}
-
-	template<typename T>
-	void list<T>::insert(iterator position, size_type n, const value_type& val) {
-		insert_aux(position, n, val, typename __is_integer<size_type>::is_integer());
-	}
-
-	template<typename T>
-	template<typename InputIterator>
-	void list<T>::insert(iterator position, InputIterator first, InputIterator last) {
-		insert_aux(position, first, last, typename __is_integer<InputIterator>::is_integer());
-	}
-
-	template<typename T>
-	void list<T>::merge(list & other) {
-			//默认情况是升序
-		merge(other,TinySTL::less<T>)
-	}
-
-	template<typename T>
-	template<typename Compare>
-	void list<T>::merge(list&other, Compare comp) {
-		//merge后会掠夺other的结点
-		if (this != &x) {
-			iterator first = begin();
-			iterator last = end();
-			iterator first_other = other.begin();
-			iterator last_other = other.end();
-
-			while (first != last && first_other != last_other) {
-				if (comp(*first, *first_other)) {
-					iterator next = first_other;
-					++next;
-					for (; next != last_other && comp(*next, *first); ++next) //一直比较，直到出现不满足comp( )的结点
-						;
-					auto f = first_other.p;
-					auto l = next.p->pre;
-					first_other = next;
-
-					other.ulink_node(f, l);
-					link_node(first.p, f, l);
-					++first;
-				}
-				else {
-					++first;
-				}
-
-				//拼接剩余结点
-				if (first_other != last_other) {
-					auto f = first_other.p;
-					auto l = last_other.p;
-					other.ulink_node(f, l);
-					link_node(last.p, f, l);
-				}
-			}
-		}
-	}
 
 } //namespace TinySTL
 #endif // !LIST_H
