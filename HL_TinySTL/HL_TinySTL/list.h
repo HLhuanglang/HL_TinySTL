@@ -2,6 +2,9 @@
 名称：list.h
 注意：
 	链表是双向环形链表，为了满足前闭后开原则，增设首元结点
+	用node_指向首元结点，	node_->next 表示头结点  
+											node_本身表示尾 
+											node_->pre表示最后一个结点
 *****************************************************************************/
 
 #ifndef LIST_H
@@ -209,6 +212,28 @@ namespace TinySTL {
 	private:
 		//helper function
 
+		//申请结点和销毁结点
+		node_ptr create_node(value_type&val);
+		void destory_node(node_ptr p);
+	
+		//初始化构建
+		void fill_init(size_type n, const value_type& val);
+		template<class Iter>
+		void copy_init(Iter fistr, Iter last);
+
+		/*插入构建
+		插入新结点时，需生成新结点和选择插入位置，不同位置插入导致链接方式也不一样
+		可以自定义新结点值，也可以根据一段序列的值进行结点创建
+		*/
+		iterator link_one_node(const_iterator position, base_ptr node);		//在position处链接node指向的结点。返回node结点位置
+		void link_node(base_ptr p, base_ptr first, base_ptr last);					//在p处链接  [first,last）这一段结点
+		void link_node_at_front(base_ptr first, base_ptr last);							//在链表头链接[first，last）这段结点
+		void link_node_at_back(base_ptr first, base_ptr last);							//在链表尾部链接[first，last)这段结点
+		void unlink_node(base_ptr first, base_ptr last);									//从链表中断开[first,last)这段结点
+
+		iterator fill_insert(const_iterator pos, size_type n, const value_type& val);	//自定义值、位置、个数，插入新结点段
+		template<class Iter>
+		iterator copy_insert(const_iterator pos, size_type n, Iter first);			//取序列[first，last）中每个元素的值作为value进行结点构造，然后插入
 	
 	public:
 		/********************************************************************************/
@@ -275,8 +300,105 @@ namespace TinySTL {
 		void sort();
 		template<typename Compare>
 		void sort(Compare comp);
-	}; //end of class
+	}; //end of  list class
 
+
+	/********************************************************************************/
+	//helper function 实现
+	template<class T>
+	typename list<T>::node_ptr	list<T>::create_node(value_type& val) {
+		node_ptr node = node_allocator::allocate(1);
+		data_allocator::construct(&node->value, val);
+		node->prev = nullptr;
+		node->next = nullptr;
+		return node;
+	}
+
+	template<class T>
+	void list<T>::fill_init(size_type n, const value_type&val) {
+		base_ptr Fn = base_allocaror::allocate(1);	//Fn代表首元结点
+		Fn->unlink();
+		size_ = n;
+		if (n == 0) return Fn;
+		for (; n > 0; --n) {
+			node_ptr new_node = create_node(val);
+			link_node_at_back(new_node->as_base(), new_node->as_base());
+		}
+	}
+	
+	template<class T>
+	template<class Iter>
+	void list<T>::copy_init(Iter first, Iter last) {
+		size_type n = TinySTL::distance(first, last);
+		size_ = n;
+		base_ptr Fn = base_allocaror::allocate(1);
+		Fn->unlink();
+		for (; n > 0; n--, ++first) {
+			node_ptr  new_node = create_node(*first);
+			link_node_at_back(new_node->as_base(), new_node->as_base());
+		}
+	}
+
+	template<class T>
+	typename list<T>::iterator list<T>::link_one_node(const_iterator pos, base_ptr node) {
+		if (pos == node_->next){
+			link_node_at_front(node, node);
+		}
+		else if (pso == node_) {
+			link_node_at_back(node, node);
+		}
+		else
+			link_node(pos.node_, node, node);
+		return node;
+	}
+
+	template<class T>
+	void list<T>::link_node(base_ptr p, base_ptr first, base_ptr last) {
+		p->prev->next = first;
+		last->next = p;
+		first->prev = p->prev;
+		p->prev = last;
+	}
+
+	template<class T>
+	void list<T>::link_node_at_front(base_ptr first, base_ptr last) {
+		last->next = node_->next;
+		node_->next = first;
+		node_->next->prev = last;
+		first->prev = node_;
+	}
+
+	template<class T>
+	void list<T>::link_node_at_back(base_ptr first, base_ptr last) {
+		link_node(node_, first, last);
+	}
+
+	template<class T>
+	void list<T>::unlink_node(base_ptr first, base_ptr last) {
+		first->prev->next = last->next;
+		last->next->prev = first->prev;
+	}
+
+	template<class T>
+	typename list<T>::iterator list<T>::fill_insert(const_iterator pos, size_type n, const value_type& val) {
+		size_ += n;
+		node_ptr new_node = create_node(val);
+		for (; n > 0; n--) {
+			link_one_node(pos, new_node->as_base());
+		}
+	}
+
+	template<class T>
+	template<class Iter>
+	typename list<T>::iterator 
+		list<T>::copy_insert(const_iterator pos, size_type n, Iter first) {
+		size_type add_size = n;
+		size_ += add_size;
+		for (; n > 0; n--,++first) {
+			node_ptr new_node = create_node(*first);
+			link_one_node(pos, new_node->as_base());
+		}
+	}
 
 
 } //namespace TinySTL
