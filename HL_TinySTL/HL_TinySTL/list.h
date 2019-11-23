@@ -2,6 +2,7 @@
 名称：list.h
 注意：
 	链表是双向环形链表，为了满足前闭后开原则，增设首元结点
+	当链表为空时，只有首元结点需要初始化首元结点的指针，否则容易出现野指针的不可预估行为
 	用node_指向首元结点，	node_->next 表示头结点  
 											node_本身表示尾 
 											node_->pre表示最后一个结点
@@ -77,7 +78,7 @@ namespace TinySTL {
 	//const迭代器和非const迭代器，无法直接用强制转换实现。因为内部操作是不同的
 
 	template<class  T>
-	class list_iterator : public TinySTL::iterator<TinySTL::bidirectional_iterator_tag, T> {
+	struct list_iterator : public TinySTL::iterator<TinySTL::bidirectional_iterator_tag, T> {
 		typedef T		value_type;
 		typedef T*	pointer;
 		typedef T&	reference;
@@ -91,7 +92,8 @@ namespace TinySTL {
 		list_iterator() = default;
 		list_iterator(base_ptr x) : node_(x) {}
 		list_iterator(node_ptr x): node_(x->as_base()){}
-		list_iterator(const list_iterator& rhs) : node_(rhs.node_) {}
+		//copy构造函数
+		list_iterator(const list_iterator<T>& rhs)  : node_(rhs.node_) {}
 
 		//重载操作符
 		reference operator*() const { return  node_->as_node()->value; }
@@ -127,7 +129,7 @@ namespace TinySTL {
 	};
 
 	template <class T>
-	struct list_const_iterator : public iterator<bidirectional_iterator_tag, T>
+	struct list_const_iterator : public TinySTL::iterator<TinySTL::bidirectional_iterator_tag, T>
 	{
 		typedef T                                 value_type;
 		typedef const T*                          pointer;
@@ -141,8 +143,9 @@ namespace TinySTL {
 		list_const_iterator() = default;
 		list_const_iterator(base_ptr x) : node_(x) {}
 		list_const_iterator(node_ptr x) : node_(x->as_base()) {}
-		list_const_iterator(const list_iterator<T>& rhs) : node_(rhs.node_) {}
-		list_const_iterator(const list_const_iterator& rhs) : node_(rhs.node_) {}
+		list_const_iterator(const list_iterator<T>& rhs)   : node_(rhs.node_) {}
+		//copy构造函数
+		list_const_iterator(const list_const_iterator<T>& rhs)   : node_(rhs.node_) {}
 
 		reference operator*()  const { return node_->as_node()->value; }
 		pointer   operator->() const { return &(operator*()); }
@@ -182,9 +185,9 @@ namespace TinySTL {
 	class list {
 	public:
 		typedef	TinySTL::allocator<T>									allocator_type;		//用于提取allocator的一些型别定义
-		typedef	TinySTL::allocator<T>									data_allocator;		//用于对象构造
-		typedef	TinySTL::allocator<list_node<T>>				node_allocator;	//申请list_node结点
-		typedef	TinySTL::allocator<list_node_base<T>>		base_allocaror;		//申请list_node_base结点，作为首元结点
+		typedef	TinySTL::allocator<T>									data_allocator;		//用于在结点的值域处 构造对象
+		typedef	TinySTL::allocator<list_node<T>>				node_allocator;	//申请、销毁list_node结点
+		typedef	TinySTL::allocator<list_node_base<T>>		base_allocaror;		//申请、销毁list_node_base结点
 
 		//list内嵌型别定义
 		typedef typename allocator_type::value_type			value_type;
@@ -213,11 +216,11 @@ namespace TinySTL {
 		//helper function
 
 		//申请结点和销毁结点
-		node_ptr create_node(value_type&val);
+		node_ptr create_node(const value_type&val);
 		void destory_node(node_ptr p);
 	
 		//初始化构建
-		void fill_init(size_type n, const value_type& val);
+		void fill_init(size_type n, const value_type& val = value_type());
 		template<class Iter>
 		void copy_init(Iter fistr, Iter last);
 
@@ -235,6 +238,17 @@ namespace TinySTL {
 		template<class Iter>
 		iterator copy_insert(const_iterator pos, size_type n, Iter first);			//取序列[first，last）中每个元素的值作为value进行结点构造，然后插入
 	
+
+		template<class InputIterator>
+		void list_aux(InputIterator first, InputIterator last, __false_type) 
+		{
+			copy_init(first, last);
+		}
+		void list_aux(size_type n, const value_type& val, __true_type) 
+		{
+			fill_init(n, val);
+		}
+
 	public:
 		/********************************************************************************/
 		//对象构造、析构相关
@@ -248,13 +262,14 @@ namespace TinySTL {
 
 		/********************************************************************************/
 		//迭代器相关
-		iterator begin();
-		iterator end();
-
+		iterator begin() { return node_->next; }
+		iterator end() { return node_; }
+		const_iterator cbegin() const { return	node_->next; }
+		const_iterator cend() const { return node_; }
 		/********************************************************************************/
 		//容量相关相关
-		bool empty();
-		size_type size() const;
+		bool empty() { return size_=0?true:false ; }
+		size_type size() const { return size_; }
 		void resize(size_type _Newsize);
 		void resize(size_type _Newsize, const value_type& val);
 
@@ -306,7 +321,7 @@ namespace TinySTL {
 	/********************************************************************************/
 	//helper function 实现
 	template<class T>
-	typename list<T>::node_ptr	list<T>::create_node(value_type& val) {
+	typename list<T>::node_ptr	list<T>::create_node(const value_type& val) {
 		node_ptr node = node_allocator::allocate(1);
 		data_allocator::construct(&node->value, val);
 		node->prev = nullptr;
@@ -315,11 +330,17 @@ namespace TinySTL {
 	}
 
 	template<class T>
+	void list<T>::destory_node(node_ptr p) {
+		data_allocator::destory(&p->value);
+		node_allocator::deallocate(p);
+	}
+
+	template<class T>
 	void list<T>::fill_init(size_type n, const value_type&val) {
-		base_ptr Fn = base_allocaror::allocate(1);	//Fn代表首元结点
-		Fn->unlink();
+		node_= base_allocaror::allocate(1);
+		node_->unlink();	//如果没写，首元结点node_的指针会变成野指针
 		size_ = n;
-		if (n == 0) return Fn;
+		if (n == 0) return;
 		for (; n > 0; --n) {
 			node_ptr new_node = create_node(val);
 			link_node_at_back(new_node->as_base(), new_node->as_base());
@@ -329,11 +350,10 @@ namespace TinySTL {
 	template<class T>
 	template<class Iter>
 	void list<T>::copy_init(Iter first, Iter last) {
-		size_type n = TinySTL::distance(first, last);
-		size_ = n;
-		base_ptr Fn = base_allocaror::allocate(1);
-		Fn->unlink();
-		for (; n > 0; n--, ++first) {
+		node_ = base_allocaror::allocate(1);
+		node_->unlink();
+		for (; first != last; ++first) {
+			size_++;
 			node_ptr  new_node = create_node(*first);
 			link_node_at_back(new_node->as_base(), new_node->as_base());
 		}
@@ -344,7 +364,7 @@ namespace TinySTL {
 		if (pos == node_->next){
 			link_node_at_front(node, node);
 		}
-		else if (pso == node_) {
+		else if (pos == node_) {
 			link_node_at_back(node, node);
 		}
 		else
@@ -370,7 +390,10 @@ namespace TinySTL {
 
 	template<class T>
 	void list<T>::link_node_at_back(base_ptr first, base_ptr last) {
-		link_node(node_, first, last);
+		last->next = node_;
+		first->prev = node_->prev;  //
+		first->prev->next = first;		 //如果node_之前没有结点，这两句句的作用就是first=first；
+		node_->prev = last;
 	}
 
 	template<class T>
@@ -400,6 +423,63 @@ namespace TinySTL {
 		}
 	}
 
+	/********************************************************************************/
+	//对象构造、析构相关
+	template<class T>
+	list<T>::list() {
+		fill_init(0, value_type());
+	}
+
+	template<class T>
+	list<T>::list(size_type n) {
+		fill_init(n, value_type());
+	}
+
+	template<class T>
+	list<T>::list(size_type n, const value_type& val) {
+		typedef typename __is_integer<size_type>::is_integer IS_INTEGER;
+		list_aux(n, val, IS_INTEGER());
+	}
+
+	template<class T>
+	template<class InputIterator>
+	list<T>::list(InputIterator first, InputIterator last) {
+		typedef typename __is_integer<InputIterator>::is_integer IS_INTEGER;
+		list_aux(first,last, IS_INTEGER());
+	}
+
+	template<class T>
+	list<T>::list(const list& other) {
+		//拷贝构造，所以必须得是cbegin、cend
+		copy_init(other.cbegin(), other.cend());
+	}
+
+
+	template<class T>
+	list<T>::~list() {
+		//普通结点和首元结点分开销毁
+		if (node_) {
+			clear();
+			base_allocaror::deallocate(node_);
+			node_ = nullptr;
+			size_ = 0;
+		}
+	}
+
+	/********************************************************************************/
+	//元素修改相关相关
+	template<class T>
+	void list<T>::clear() {
+		if (size_ !=  0) {
+			base_ptr cur = node_->next;
+			for (base_ptr next = cur->next; cur != node_; cur = next, next = next->next) {
+				destory_node(cur->as_node());
+			}
+		}
+		//清除完毕，剩下首元结点
+		node_->unlink();
+		size_ = 0;
+	}
 
 } //namespace TinySTL
 #endif // !LIST_H
