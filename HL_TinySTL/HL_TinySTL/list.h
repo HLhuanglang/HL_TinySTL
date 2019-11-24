@@ -99,13 +99,13 @@ namespace TinySTL {
 		reference operator*() const { return  node_->as_node()->value; }
 		pointer		operator->() const { return &(operator*()); }
 		
-		self& operator++() {
+		self& operator++() {	//前置++
 			STL_DEBUG(node_ != nullptr);
 			node_ = node_->next;
 			return *this;
 		}
 
-		self operator++(int) {
+		self operator++(int) {	//后置++
 			self tmp = *this;
 			++*this;
 			return tmp;
@@ -264,8 +264,12 @@ namespace TinySTL {
 		//迭代器相关
 		iterator begin() { return node_->next; }
 		iterator end() { return node_; }
-		const_iterator cbegin() const { return	node_->next; }
-		const_iterator cend() const { return node_; }
+		const_iterator begin() const { return	 node_->next; }
+		const_iterator end() const { return node_; }
+
+		const_iterator cbegin()  const { return begin(); }
+		const_iterator cend()  const { return end(); }
+
 		/********************************************************************************/
 		//容量相关相关
 		bool empty() { return size_=0?true:false ; }
@@ -352,6 +356,7 @@ namespace TinySTL {
 	void list<T>::copy_init(Iter first, Iter last) {
 		node_ = base_allocaror::allocate(1);
 		node_->unlink();
+		//auto tmp = first; 
 		for (; first != last; ++first) {
 			size_++;
 			node_ptr  new_node = create_node(*first);
@@ -450,10 +455,8 @@ namespace TinySTL {
 
 	template<class T>
 	list<T>::list(const list& other) {
-		//拷贝构造，所以必须得是cbegin、cend
 		copy_init(other.cbegin(), other.cend());
 	}
-
 
 	template<class T>
 	list<T>::~list() {
