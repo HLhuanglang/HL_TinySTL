@@ -236,7 +236,7 @@ namespace TinySTL {
 
 		iterator fill_insert(const_iterator pos, size_type n, const value_type& val);	//自定义值、位置、个数，插入新结点段
 		template<class Iter>
-		iterator copy_insert(const_iterator pos, size_type n, Iter first);			//取序列[first，last）中每个元素的值作为value进行结点构造，然后插入
+		iterator copy_insert(const_iterator pos, size_type n, Iter first);		//取序列[first，last）中每个元素的值作为value进行结点构造，然后插入
 	
 
 		template<class InputIterator>
@@ -247,6 +247,19 @@ namespace TinySTL {
 		void list_aux(size_type n, const value_type& val, __true_type) 
 		{
 			fill_init(n, val);
+		}
+		template<class InputIterator>
+		void insert_aux(const_iterator pos, InputIterator first, InputIterator last, __false_type)
+		{
+			size_type n = 0;
+			auto tmp = first;
+			for (; tmp != last;++tmp)
+				n++;
+			copy_insert(pos, n, first);
+		}
+		void insert_aux(const_iterator pos, size_type n, const value_type & val, __true_type) 
+		{
+			fill_insert(pos, n, val);
 		}
 
 	public:
@@ -272,15 +285,15 @@ namespace TinySTL {
 
 		/********************************************************************************/
 		//容量相关相关
-		bool empty() { return size_=0?true:false ; }
+		bool empty() { return node_->next == node_; }
 		size_type size() const { return size_; }
 		void resize(size_type _Newsize);
 		void resize(size_type _Newsize, const value_type& val);
 
 		/********************************************************************************/
 		//元素访问相关
-		reference front();
-		reference back();
+		reference front() { STL_DEBUG(!empty()); return *begin(); }
+		reference back() { STL_DEBUG(!empty()); return *(--end()); }
 
 		/********************************************************************************/
 		//元素修改相关相关
@@ -388,9 +401,9 @@ namespace TinySTL {
 	template<class T>
 	void list<T>::link_node_at_front(base_ptr first, base_ptr last) {
 		last->next = node_->next;
-		node_->next = first;
 		node_->next->prev = last;
 		first->prev = node_;
+		node_->next = first;
 	}
 
 	template<class T>
@@ -410,22 +423,26 @@ namespace TinySTL {
 	template<class T>
 	typename list<T>::iterator list<T>::fill_insert(const_iterator pos, size_type n, const value_type& val) {
 		size_ += n;
-		node_ptr new_node = create_node(val);
+		iterator  r;
 		for (; n > 0; n--) {
-			link_one_node(pos, new_node->as_base());
+			node_ptr new_node = create_node(val);
+			r=link_one_node(pos, new_node->as_base());
 		}
+		return r;
 	}
 
 	template<class T>
 	template<class Iter>
-	typename list<T>::iterator 
+	typename list<T>::iterator
 		list<T>::copy_insert(const_iterator pos, size_type n, Iter first) {
 		size_type add_size = n;
 		size_ += add_size;
-		for (; n > 0; n--,++first) {
+		iterator  r;
+		for (; n > 0; n--, ++first) {
 			node_ptr new_node = create_node(*first);
-			link_one_node(pos, new_node->as_base());
+			r = link_one_node(pos, new_node->as_base());
 		}
+		return r;
 	}
 
 	/********************************************************************************/
@@ -470,6 +487,29 @@ namespace TinySTL {
 	}
 
 	/********************************************************************************/
+	//容量相关相关
+	template<class T>
+	void list<T>::resize(size_type _Newsize) {
+		resize(_Newsize, value_type());
+	}
+
+	template<class T>
+	void list<T>::resize(size_type _Newsize, const value_type& val) {
+		if (_Newsize > size()) {
+			size_type add_size = _Newsize - size_;
+			while (add_size--)
+				push_back(val);
+			size_ = _Newsize;
+		}
+		else {
+			size_type delete_size = size() - _Newsize;
+			while (delete_size--)
+				pop_back();	//注意pop_back本身也会对size_进行减一
+			size_ = _Newsize;
+		}
+	}
+
+	/********************************************************************************/
 	//元素修改相关相关
 	template<class T>
 	void list<T>::clear() {
@@ -482,6 +522,85 @@ namespace TinySTL {
 		//清除完毕，剩下首元结点
 		node_->unlink();
 		size_ = 0;
+	}
+
+	template<class T>
+	void list<T>::push_back(const value_type& val) {
+		node_ptr new_node = create_node(val);
+		link_node_at_back(new_node->as_base(),new_node->as_base());
+		size_++;
+	}
+
+	template<class T>
+	void list<T>::push_front(const value_type& val) {
+		node_ptr  new_node = create_node(val);
+		link_node_at_front(new_node->as_base(), new_node->as_base());
+		size_++;
+	}
+
+	template<class T>
+	void list<T>::pop_back() {
+		if (!empty()) {
+			base_ptr tmp = node_->prev;
+			unlink_node(tmp, tmp);
+			tmp->unlink();
+			destory_node(tmp->as_node());
+			size_--;
+		}
+	}
+
+	template<class T>
+	void list<T>::pop_front() {
+		if(!empty()){
+			base_ptr tmp = node_->next;
+			unlink_node(tmp, tmp);
+			tmp->unlink();
+			destory_node(tmp->as_node());
+			size_--;
+		}
+	}
+
+	template<class T>
+	typename list<T>::iterator
+		list<T>::insert(iterator pos, const value_type&val) {
+		node_ptr new_node = create_node(val);
+		size_++;
+		return 	link_one_node(pos, new_node->as_base());
+	}
+
+	template<class T>
+	void list<T>::insert(iterator pos, size_type n, const value_type& val) {
+		typedef typename __is_integer<size_type>::is_integer	IS_INTEGER;
+		insert_aux(pos, n, val, IS_INTEGER());
+	}
+
+	template<class T>
+	template<class InputIterator>
+	void list<T>::insert(iterator pos, InputIterator first, InputIterator last) {
+		typedef typename __is_integer<InputIterator>::is_integer	IS_INTEGER;
+		insert_aux(pos, first, last, IS_INTEGER());
+	}
+
+	template<class T>
+	typename list<T>::iterator
+		list<T>::erase(const_iterator pos) {
+		if (pos != cend()) {
+			base_ptr tmp = pos.node_;
+			base_ptr next = tmp->next;
+			unlink_node(tmp, tmp);
+			destory_node(tmp->as_node());
+			--size_;
+			return iterator(next);
+		}
+	}
+
+	template<class T>
+	typename list<T>::iterator
+		list<T>::erase(const_iterator first, const_iterator last) {
+		for (; first != last;++first) {
+			erase(first);
+		}
+		return last.node_;
 	}
 
 } //namespace TinySTL
