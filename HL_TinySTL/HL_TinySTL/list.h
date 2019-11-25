@@ -228,15 +228,15 @@ namespace TinySTL {
 		插入新结点时，需生成新结点和选择插入位置，不同位置插入导致链接方式也不一样
 		可以自定义新结点值，也可以根据一段序列的值进行结点创建
 		*/
-		iterator link_one_node(const_iterator position, base_ptr node);		//在position处链接node指向的结点。返回node结点位置
-		void link_node(base_ptr p, base_ptr first, base_ptr last);					//在p处链接  [first,last）这一段结点
-		void link_node_at_front(base_ptr first, base_ptr last);							//在链表头链接[first，last）这段结点
-		void link_node_at_back(base_ptr first, base_ptr last);							//在链表尾部链接[first，last)这段结点
-		void unlink_node(base_ptr first, base_ptr last);									//从链表中断开[first,last)这段结点
+		iterator link_one_node(const_iterator position, base_ptr node);		
+		void link_node(base_ptr p, base_ptr first, base_ptr last);					
+		void link_node_at_front(base_ptr first, base_ptr last);							
+		void link_node_at_back(base_ptr first, base_ptr last);						
+		void unlink_node(base_ptr first, base_ptr last);								
 
-		iterator fill_insert(const_iterator pos, size_type n, const value_type& val);	//自定义值、位置、个数，插入新结点段
+		iterator fill_insert(const_iterator pos, size_type n, const value_type& val);	
 		template<class Iter>
-		iterator copy_insert(const_iterator pos, size_type n, Iter first);		//取序列[first，last）中每个元素的值作为value进行结点构造，然后插入
+		iterator copy_insert(const_iterator pos, size_type n, Iter first);		
 	
 
 		template<class InputIterator>
@@ -255,6 +255,7 @@ namespace TinySTL {
 			auto tmp = first;
 			for (; tmp != last;++tmp)
 				n++;
+				//distance函数没用，后续改进以后换成distance
 			copy_insert(pos, n, first);
 		}
 		void insert_aux(const_iterator pos, size_type n, const value_type & val, __true_type) 
@@ -339,6 +340,10 @@ namespace TinySTL {
 	//helper function 实现
 	template<class T>
 	typename list<T>::node_ptr	list<T>::create_node(const value_type& val) {
+		/*
+		函数功能：以传入参数为值，创建结点
+		函数返回：返回指向该结点的指针
+		*/
 		node_ptr node = node_allocator::allocate(1);
 		data_allocator::construct(&node->value, val);
 		node->prev = nullptr;
@@ -348,12 +353,20 @@ namespace TinySTL {
 
 	template<class T>
 	void list<T>::destory_node(node_ptr p) {
+		/*
+		函数功能：析构传入指针所指向的结点的值域
+		函数返回：无
+		*/
 		data_allocator::destory(&p->value);
 		node_allocator::deallocate(p);
 	}
 
 	template<class T>
 	void list<T>::fill_init(size_type n, const value_type&val) {
+		/*
+		函数功能：初始化容器对象，创建n个值为val的结点
+		函数返回：无
+		*/
 		node_= base_allocaror::allocate(1);
 		node_->unlink();	//如果没写，首元结点node_的指针会变成野指针
 		size_ = n;
@@ -367,6 +380,10 @@ namespace TinySTL {
 	template<class T>
 	template<class Iter>
 	void list<T>::copy_init(Iter first, Iter last) {
+		/*
+		函数功能：以[first,last)区间内结点值作为新结点的值构造新结点
+		函数返回：无
+		*/
 		node_ = base_allocaror::allocate(1);
 		node_->unlink();
 		//auto tmp = first; 
@@ -379,6 +396,10 @@ namespace TinySTL {
 
 	template<class T>
 	typename list<T>::iterator list<T>::link_one_node(const_iterator pos, base_ptr node) {
+		/*
+		函数功能：在pos出链接一个新结点node
+		函数返回：返回指向新结点的迭代器
+		*/
 		if (pos == node_->next){
 			link_node_at_front(node, node);
 		}
@@ -392,6 +413,10 @@ namespace TinySTL {
 
 	template<class T>
 	void list<T>::link_node(base_ptr p, base_ptr first, base_ptr last) {
+		/*
+		函数功能：在p后面连接一段结点[first,last)
+		函数返回：无
+		*/
 		p->prev->next = first;
 		last->next = p;
 		first->prev = p->prev;
@@ -400,6 +425,10 @@ namespace TinySTL {
 
 	template<class T>
 	void list<T>::link_node_at_front(base_ptr first, base_ptr last) {
+		/*
+		函数功能：在首元结点node_后面连接一段区间[first,last)
+		函数返回：无
+		*/
 		last->next = node_->next;
 		node_->next->prev = last;
 		first->prev = node_;
@@ -408,6 +437,10 @@ namespace TinySTL {
 
 	template<class T>
 	void list<T>::link_node_at_back(base_ptr first, base_ptr last) {
+		/*
+		函数功能：在node_前连接一段区间[first,last)
+		函数返回：无
+		*/
 		last->next = node_;
 		first->prev = node_->prev;  //
 		first->prev->next = first;		 //如果node_之前没有结点，这两句句的作用就是first=first；
@@ -416,12 +449,20 @@ namespace TinySTL {
 
 	template<class T>
 	void list<T>::unlink_node(base_ptr first, base_ptr last) {
+		/*
+		函数功能：将一段结点[first,last)从容器中切出
+		函数返回：无
+		*/
 		first->prev->next = last->next;
 		last->next->prev = first->prev;
 	}
 
 	template<class T>
 	typename list<T>::iterator list<T>::fill_insert(const_iterator pos, size_type n, const value_type& val) {
+		/*
+		函数功能：用于insert函数。创建n个值为val的结点，并接入pos之后
+		函数返回：返回一个指向最后插入的结点的迭代器
+		*/
 		size_ += n;
 		iterator  r;
 		for (; n > 0; n--) {
@@ -435,6 +476,10 @@ namespace TinySTL {
 	template<class Iter>
 	typename list<T>::iterator
 		list<T>::copy_insert(const_iterator pos, size_type n, Iter first) {
+		/*
+		函数功能：用于insert。以一段结点[first,first+n)的值为新结点值创建新结点，并接入pos之后
+		函数返回：返回一个指向最后插入链表的结点的迭代器
+		*/
 		size_type add_size = n;
 		size_ += add_size;
 		iterator  r;
