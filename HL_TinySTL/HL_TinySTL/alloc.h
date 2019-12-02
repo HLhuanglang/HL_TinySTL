@@ -205,7 +205,9 @@ namespace TinySTL
 						memory_pool_end = memory_pool_start + i;
 					}
 				}
+				std::printf("out of memory");
 				memory_pool_end = nullptr; //¶ÔÓ¦startÎªnullptr
+				throw std::bad_alloc();
 			}
 			memory_pool_end = bytes_to_get + memory_pool_start;
 			return m_chunk_alloc(size, nobj);
