@@ -136,7 +136,6 @@
     <None Include="..\..\docs\开发日记001.docx" />
     <None Include="..\..\docs\开发日记002.docx" />
     <None Include="..\..\docs\开发日记003.docx" />
-    <None Include="..\..\docs\开发日记004.docx" />
     <None Include="..\..\README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

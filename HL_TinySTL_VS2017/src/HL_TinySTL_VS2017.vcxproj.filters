@@ -85,8 +85,5 @@
     <None Include="..\..\docs\开发日记003.docx">
       <Filter>docs</Filter>
     </None>
-    <None Include="..\..\docs\开发日记004.docx">
-      <Filter>docs</Filter>
-    </None>
   </ItemGroup>
 </Project>
