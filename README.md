@@ -12,6 +12,7 @@ TinySTL是参考sgi版本的源码，同时也参考了github上几个比较优�
 
 本人也是很菜的，是边学习边开发的，所以整个项目可能推进会有点慢，还望大家见谅。如果你也有开发的想法可以加我QQ1282424466，一起探讨学习，如果人多的话我会考虑建一个群，互相学习进步。
 
+个人博客地址：https://blog.csdn.net/HL545454/article/details/102995793
 三、相关资料
 ---
 书籍资料下载：https://pan.baidu.com/s/1E9107zw3xDhHkPnmhfVTtg  提取码：wrs3
