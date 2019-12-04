@@ -104,7 +104,7 @@ namespace TinySTL {
 	};
 	//函数对象：逻辑运算not logical_not<T>
 	template<class T>
-	struct logical_and : public unarg_function<T,bool> {
+	struct logical_not : public unarg_function<T,bool> {
 		bool operator()(const T&x) const { return  !x; }
 	};
 
