@@ -299,6 +299,11 @@ private:
 		fill_insert(_Where, _Count, _Val);
 	}
 
+	void _splice_other(const_iterator _Where, list& _Right,
+		const_iterator _First, const_iterator _Last, size_type _Count);
+	void _splice_self(const_iterator _Where, list& _Right,
+		const_iterator _First, const_iterator _Last, size_type _Count);
+
 public:
 	/********************************************************************************/
 	//对象构造、析构相关
@@ -361,7 +366,7 @@ public:
 
 	void unique();
 	template<typename BinaryPredicate>
-	void unqiue(BinaryPredicate);
+	void unique(BinaryPredicate _Pred);
 
 	void clear();
 	void reverse();
@@ -431,7 +436,8 @@ void list<T>::copy_init(Iter _First, Iter _Last) {
 }
 
 template<class T>
-typename list<T>::iterator list<T>::link_one_node(const_iterator _Where, _Base_ptr __Base_ptr) {
+typename list<T>::iterator list<T>::link_one_node(const_iterator _Where,
+	_Base_ptr __Base_ptr) {
 	/*
 	函数功能：在_Where出链接一个新结点__Base_ptr
 	函数返回：返回指向新结点的迭代器
@@ -494,7 +500,8 @@ void list<T>::unlink_node(_Base_ptr _First, _Base_ptr _Last) {
 }
 
 template<class T>
-typename list<T>::iterator list<T>::fill_insert(const_iterator _Where, size_type _Count, const value_type& _Val) {
+typename list<T>::iterator list<T>::fill_insert(const_iterator _Where,
+	size_type _Count, const value_type& _Val) {
 	/*
 	函数功能：用于insert函数。创建_Count个值为_Val的结点，并接入_Where之后
 	函数返回：返回一个指向最后插入的结点的迭代器
@@ -596,7 +603,8 @@ template<class T>
 void list<T>::clear() {
 	if (_Size !=  0) {
 		_Base_ptr cur = _Node->_Next;
-		for (_Base_ptr _Next = cur->_Next; cur != _Node; cur = _Next, _Next = _Next->_Next) {
+		for (_Base_ptr _Next = cur->_Next; cur != _Node;
+			cur = _Next, _Next = _Next->_Next) {
 			destory_node(cur->as_node());
 		}
 	}
@@ -650,7 +658,8 @@ typename list<T>::iterator
 }
 
 template<class T>
-void list<T>::insert(iterator _Where, size_type _Count, const value_type& _Val) {
+void list<T>::insert(iterator _Where, size_type _Count,
+	const value_type& _Val) {
 	typedef typename __is_integer<size_type>::is_integer	IS_INTEGER;
 	insert_aux(_Where, _Count, _Val, IS_INTEGER());
 }
@@ -666,34 +675,63 @@ void list<T>::insert(iterator _Where, _InIt _First, _InIt _Last) {
 template<class T>
 void list<T>::splice(const_iterator _Where, list& _Right) {
 	/*
-	函数功能：将整个链表_Right（不能是自身）合并到链表的_Where处。（掠夺式合并）
+	函数功能：将整个链表_Right（不能是自身）合并到链表的_Where之前。（掠夺式合并）
 	函数返回：无
 	*/
-	if ( *this != _Right && !_Right.empty() ) {
-		auto f = _Right._Node->_Next;
-		auto l = _Right._Node->_Prev;
-		_Right.unlink_node(f, l);
-		link_node(_Where, f, l);
+	STL_DEBUG(this != &_Right);
+	if (!_Right.empty()) {
+		//insert(_Where, _Right.begin(), _Right.end()); 这个不是掠夺式插入
+		auto _First = _Right._Node->_Next;
+		auto _Last = _Right._Node->_Prev;
 
-		_Size += _Right.size();
+		_Right.unlink_node(_First, _Last);
+		link_node(_Where._Node, _First, _Last);
+
+		_Size += _Right._Size;
 		_Right._Size = 0;
 	}
 }
 
 template<class T>
-void list<T>::splice(const_iterator _Where, list& _Right, const_iterator _First) {
+void list<T>::splice(const_iterator _Where, list& _Right,
+	const_iterator _First) {
 	/*
-	函数功能：将链表_Right[_First, _First+1）合并到_Where处（掠夺式合并）
+	函数功能：将链表_Right[_First, _First+1）合并到_Where之前（掠夺式合并）
 	函数返回：无
 	*/
+	if (_Where._Node != _First._Node
+		&& _Where._Node != _First._Node->_Next) {
+		auto _Tmp = _First._Node;
+		_Right.unlink_node(_Tmp, _Tmp);
+		link_node(_Where._Node, _Tmp, _Tmp);
+		++_Size;
+		--_Right._Size;
+	}
 }
 
 template<class T>
-void list<T>::splice(const_iterator _Where, list& _Right, const_iterator _First, const_iterator _Last) {
+void list<T>::splice(const_iterator _Where,
+	list& _Right, const_iterator _First, const_iterator _Last) {
 	/*
-	函数功能：将链表_Right（可以是自身）的一段结点[_First，_Last)合并到_Where处。（掠夺式合并）
+	函数功能：将链表_Right（可以是自身）的一段结点[_First，_Last)合并到_Where之前。（掠夺式合并）
 	函数返回：无
 	*/
+	size_type _Count = 0;
+	auto _Tmp = _First;
+	while (_Tmp != _Last) {
+		_Tmp++;
+		_Count++;
+	}
+
+	if (_First != _Last && this != &_Right) {
+		auto _Tmp_first = _First._Node;
+		auto _Tmp_last = _Last._Node->_Prev;
+
+		_Right.unlink_node(_Tmp_first, _Tmp_last);
+		link_node(_Where._Node, _Tmp_first, _Tmp_last);
+		_Size += _Count;
+		_Right._Size -= _Count;
+	}
 }
 
 template<class T>
@@ -716,6 +754,130 @@ typename list<T>::iterator
 		erase(_First);
 	}
 	return _Last._Node;
+}
+
+template<class T>
+void list<T>::merge(list& _Right) {
+	merge(_Right, TinySTL::less<T>());
+}
+
+template<class T>
+template<class Compare>
+void list<T>::merge(list& _Right, Compare comp) {
+	if (this != &_Right) {
+		iterator _First1 = begin();
+		iterator _Last1 = end();
+		iterator _First2 = _Right.begin();
+		iterator _Last2 = _Right.end();
+
+		while (_First1 != _Last1 && _First2 != _Last2) {
+			if (comp(*_First2, *_First1)) {
+				//使得comp为真
+				iterator _Next = _First2;
+				++_Next;
+				for (; _Next != _Last2 && comp(*_Next, *_First1); ++_Next) //搜寻一大段满足copm要求的结点，提高效率
+					;
+				auto _Tmp_first = _First2._Node;
+				auto _Tmp_last = _Next._Node->_Prev;
+				_First2 = _Next;
+
+				//link node
+				_Right.unlink_node(_Tmp_first, _Tmp_last);
+				link_node(_First1._Node, _Tmp_first, _Tmp_last);
+				++_First1;
+			}
+			else
+			{
+				++_First1;
+			}
+		}
+
+		//连接剩余结点
+		if (_First2 != _Last2) {
+			auto _Tmp_first = _First2._Node;
+			auto _Tmp_last = _Last2._Node->_Prev;
+			_Right.unlink_node(_Tmp_first, _Tmp_last);
+			link_node(_First1._Node, _Tmp_first, _Tmp_last);
+		}
+
+		_Size += _Right._Size;
+		_Right._Size = 0;
+	}
+}
+
+template<class T>
+void list<T>::remove(const value_type& _Val) {
+	//lamada表达式
+	remove_if([&](const value_type& _Tmp) {return _Tmp == _Val; });
+}
+
+template<class T>
+template<class Predicate>
+void list<T>::remove_if(Predicate _Pred) {
+	auto _First = begin();
+	auto _Last = end();
+	for (auto _Next = _First; _First != _Last; _First = _Next) {
+		//erase每次都会释放传入的迭代器，导致迭代器失效，所以每次循环_First=_Next
+		++_Next;
+		if (_Pred(*_First))
+			erase(_First); //erase中有--_Size
+	}
+}
+
+template<class T>
+void list<T>::unique() {
+	unique(TinySTL::equal_to<T>());
+}
+
+template<class T>
+template<class BinaryPredicate >
+void list<T>::unique(BinaryPredicate _Pred) {
+	//滑动窗口，以[ _Cur, _First ]为窗口向前移动，符合条件则删除_Cur
+	auto _First = begin();
+	auto _Last = end();
+	auto _Cur = _First;
+	++_First;
+	while (_First != _Last) {
+		if (_Pred(*_First, *_Cur))
+			erase(_Cur);
+		else
+		{
+			_Cur = _First;
+		}
+		_Cur = _First;
+		++_First;
+	}
+}
+
+template<class T>
+void list<T>::reverse() {
+	if (_Size <= 1)
+		return;
+	iterator _First = begin();
+	iterator _Last = end();
+	while (_First._Node != _Last._Node) {
+		TinySTL::swap(_First._Node->_Prev, _First._Node->_Next);
+		_First = _First._Node->_Prev;
+	}
+	TinySTL::swap(_Last._Node->_Prev, _Last._Node->_Next);
+}
+
+template<class T>
+void list<T>::swap(list& _Rigth) {
+	//交换内部结构，即指向首元节点的指针
+	TinySTL::swap(_Node, _Rigth._Node);
+	TinySTL::swap(_Size, _Rigth._Size);
+}
+
+template<class T>
+void list<T>::sort() {
+	//TO DO
+}
+
+template<class T>
+template<class Compare>
+void list<T>::sort(Compare comp) {
+	// TO DO
 }
 
 } //namespace TinySTL
