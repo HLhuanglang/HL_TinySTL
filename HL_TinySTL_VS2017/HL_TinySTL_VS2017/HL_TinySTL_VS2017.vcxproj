@@ -120,10 +120,12 @@
     <ClInclude Include="alloc.h" />
     <ClInclude Include="allocator.h" />
     <ClInclude Include="construct.h" />
+    <ClInclude Include="deque.h" />
     <ClInclude Include="exceptdef.h" />
     <ClInclude Include="functional.h" />
     <ClInclude Include="iterator.h" />
     <ClInclude Include="list.h" />
+    <ClInclude Include="list_test.h" />
     <ClInclude Include="type_traits.h" />
     <ClInclude Include="uninitialized.h" />
     <ClInclude Include="utility.h" />
@@ -131,7 +133,10 @@
     <ClInclude Include="vector_test.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="temp_test.cpp" />
+    <None Include="..\..\docs\开发日记001.docx" />
+    <None Include="..\..\docs\开发日记002.docx" />
+    <None Include="..\..\docs\开发日记003.docx" />
+    <None Include="..\..\README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

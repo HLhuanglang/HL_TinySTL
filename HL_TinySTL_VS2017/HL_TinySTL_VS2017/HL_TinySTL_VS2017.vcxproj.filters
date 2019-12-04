@@ -18,6 +18,9 @@
     <Filter Include="src\container">
       <UniqueIdentifier>{782db017-9a67-44c0-ac52-7039f08f5a16}</UniqueIdentifier>
     </Filter>
+    <Filter Include="docs">
+      <UniqueIdentifier>{3f295fff-acef-4254-a729-a7cb54c4cf58}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vector_test.h">
@@ -62,10 +65,25 @@
     <ClInclude Include="vector.h">
       <Filter>src\container</Filter>
     </ClInclude>
+    <ClInclude Include="list_test.h">
+      <Filter>test</Filter>
+    </ClInclude>
+    <ClInclude Include="deque.h">
+      <Filter>src\container</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="temp_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
+    <None Include="..\..\README.md">
+      <Filter>src</Filter>
+    </None>
+    <None Include="..\..\docs\开发日记001.docx">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="..\..\docs\开发日记002.docx">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="..\..\docs\开发日记003.docx">
+      <Filter>docs</Filter>
+    </None>
   </ItemGroup>
 </Project>
