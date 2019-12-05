@@ -21,6 +21,9 @@
     <Filter Include="docs">
       <UniqueIdentifier>{3f295fff-acef-4254-a729-a7cb54c4cf58}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test\lib">
+      <UniqueIdentifier>{a14bc266-7716-47be-be08-6083e4698613}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\algorithm\algobase.h">
@@ -69,6 +72,15 @@
       <Filter>test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\test\vector_test.h">
+      <Filter>test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\lib\redbud\io\color.h">
+      <Filter>test\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\lib\redbud\platform.h">
+      <Filter>test\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\test\test.h">
       <Filter>test</Filter>
     </ClInclude>
   </ItemGroup>

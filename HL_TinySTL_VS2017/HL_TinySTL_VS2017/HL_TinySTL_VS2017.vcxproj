@@ -69,7 +69,22 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ReferencePath>$(ReferencePath)</ReferencePath>
+    <LibraryPath>F:\算法—项目\项目实践\STL\HL_TinySTL\test\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ReferencePath>$(ReferencePath)</ReferencePath>
+    <LibraryPath>F:\算法—项目\项目实践\STL\HL_TinySTL\test\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ReferencePath>$(ReferencePath)</ReferencePath>
+    <LibraryPath>F:\算法—项目\项目实践\STL\HL_TinySTL\test\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ReferencePath>$(ReferencePath)</ReferencePath>
+    <LibraryPath>F:\算法—项目\项目实践\STL\HL_TinySTL\test\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -129,7 +144,10 @@
     <ClInclude Include="..\..\src\fundation\type_traits.h" />
     <ClInclude Include="..\..\src\fundation\uninitialized.h" />
     <ClInclude Include="..\..\src\fundation\utility.h" />
+    <ClInclude Include="..\..\test\lib\redbud\io\color.h" />
+    <ClInclude Include="..\..\test\lib\redbud\platform.h" />
     <ClInclude Include="..\..\test\list_test.h" />
+    <ClInclude Include="..\..\test\test.h" />
     <ClInclude Include="..\..\test\vector_test.h" />
   </ItemGroup>
   <ItemGroup>
