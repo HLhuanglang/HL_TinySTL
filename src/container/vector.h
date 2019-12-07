@@ -14,11 +14,10 @@ note:
 *************************************************************/
 #ifndef VECTOR_H
 #define VECTOR_H
-#include"iterator.h"
-#include"allocator.h"
-#include"uninitialized.h"
-#include"utility.h"
-#include"algorithm.h"
+#include"../fundation/allocator.h"
+#include"../fundation/iterator.h"
+#include"../fundation/utility.h"
+#include"../algorithm/algorithm.h"
 namespace TinySTL {
 	template<typename T, typename Alloc = allocator<T>>
 	class vector {

@@ -1,9 +1,7 @@
 #pragma once
-#include"list.h"
-#include"vector.h"
+#include"../src/container/list.h"
 
 #include<list>
-#include<vector>
 #include<iostream>
 #include<ctime>
 

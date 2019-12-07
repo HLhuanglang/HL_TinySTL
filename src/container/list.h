@@ -11,12 +11,12 @@
 #ifndef LIST_H
 #define LIST_H
 
-#include"allocator.h"
-#include"iterator.h"
-#include"type_traits.h"
-#include"utility.h"
-#include"functional.h"
-#include"exceptdef.h"
+#include"../fundation/allocator.h"
+#include"../fundation/iterator.h"
+#include"../fundation/type_traits.h"
+#include"../fundation/utility.h"
+#include"../fundation/functional.h"
+#include"../fundation/exceptdef.h"
 
 
 namespace TinySTL {
