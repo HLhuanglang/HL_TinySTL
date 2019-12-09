@@ -24,7 +24,7 @@ template <class T>
 template<class _Ty, class _Ref, class _Ptr>
 	struct _Deque_iterator
 		: public TinySTL::iterator<TinySTL::bidirectional_iterator_tag, T> 
-	{
+	{	//继承以后下面的型别应该可以不用写了吧
 	typedef _Ty		value_type;
 	typedef _Ptr		pointer;
 	typedef _Ref	reference;
@@ -127,19 +127,19 @@ template<class _Ty, class _Ref, class _Ptr>
 
 	self& += (difference_type n)
 	{	//向前跳n个元素（如果n为负，则向后跳）
-		difference_type _Offset = n + (_Cur - _First);
-		if (_Offset >= 0
-			&& _Offset < difference_type(buffer_size()))
+		difference_type _Off = n + (_Cur - _First);
+		if (_Off >= 0
+			&& _Off < difference_type(buffer_size()))
 		{	//目标位置任然在同一个缓冲区内
 			_Cur += n;
 		}
 		else
 		{	//目标位置不在同一个缓冲区
-			difference_type _Node_offset = _Offset > 0
-				? _Offset / difference_type(buffer_size())
-				: -difference_type((-_Offset - 1) / buffer_size()) - 1;
+			difference_type _Node_offset = _Off > 0
+				? _Off / difference_type(buffer_size())
+				: -difference_type((-_Off - 1) / buffer_size()) - 1;
 			skip_node(_Node + _Node_offset);	/*确定正确的结点位置*/
-			_Cur = _First + (_Offset - _Node_offset * difference_type(buffer_size()));
+			_Cur = _First + (_Off - _Node_offset * difference_type(buffer_size()));
 		}
 		return *this;
 	}
@@ -190,9 +190,102 @@ template<class _Ty, class _Ref, class _Ptr>
 	//CLASS TEMPLATE deque
 template<class T>
 class deque {
-	typedef TinySTL::allocator<T>		
+	typedef TinySTL::allocator<T>	_Allocator_type;	
+	typedef TinySTL::allocator<T*>	_Map_allocator;		//用于申请map（map里面存的是指针）
+	typedef TinySTL::allocator<T>	_Buffer_allocator;		//用于申请buffer的所需要的空间
+	typedef TinySTL::allocator<T>	_Data_allocator;		//用于在buffer内创造对象
+
+	//内嵌型别定义(用_Alloccator_type主要就是方便编写。也只可以直接定义typedef T value_type)
+	typedef typename _Allocator_type::value_type				value_type;
+	typedef typename _Allocator_type::pointer					pointer;
+	typedef typename _Allocator_type::const_pointer			const_pointer;
+	typedef typename _Allocator_type::reference				reference;
+	typedef typename _Allocator_type::const_reference		const_reference;
+	typedef typename _Allocator_type::size_type					size_type;
+	typedef typename _Allocator_type::difference_type		difference_type;
+
+	typedef pointer*				map_pointer;
+	typedef const_pointer*	const_map_pointer;
 	
+	//迭代器定义
+	typedef _Deque_iterator<T, T&, T*>								iterator;
+	typedef _Deque_iterator<T, const T&, const T*>			const_iterator;
+	typedef TinySTL::reverse_iterator<iterator>					reverse_iterator;
+	typedef TinySTL::reverse_iterator<const_iterator>			const_reverse_iterator;
+
+	//成员变量定义
+	iterator _First;				//指向第一个节点
+	iterator _Last;				//指向最后一个节点
+	map_pointer _Map;		//指向中央控制区map
+	size_type _Map_size;	//map内有多少个指针（用于map扩容）
+
+private:
+	//辅助函数声明
+
+public:
+	//成员函数声明
+	_Allocator_type get_allocator() { return _Allocator_type(); }
+	
+	/********************************************************************************/
+	//对象构造、析构、复制、移动
+	deque();
+	deque(size_type _Count);
+	deque(size_type _Count, value_type _Val);
+	template<class Iter>
+	deque(Iter _First, Iter _Last);
+	deque(const deque& _Right);
+	deque(deque&& _Right);
+	deque& operator=(const deque& _Right);
+	deque& operator=(deque&& _Right);
+	deque& operator=(std::initializer_list<value_type> _List);
+	~deque();
+	
+	/********************************************************************************/
+	//迭代器相关
+
+
+	/********************************************************************************/
+	//元素访问相关
+	reference operator[](const size_type _Index);
+	const_reference operator[](const size_type _Index);
+	reference front();
+	const_reference front();
+	reference back();
+	const_reference back();
+	reference at(const size_type _Index);
+	const_reference at(const size_type _Index);
+	
+	/********************************************************************************/
+	//容量相关
+	size_type size();
+	size_type max_size();
+	bool empty();
+	void resize(size_type _New_size) { resize(_New_size, value_type()); }
+	void resize(size_type _New_size, value_type _Val);
+	void shrink_to_fit();
+	
+	/********************************************************************************/
+	//修改容器相关
+	void clear();
+	iterator erase(iterator _Where);
+	iterator erase(iterator _First, iterator _Last);
+	void swap(deque& _Right);
+
+	void assign(size_type _Count, value_type _Val);
+	template<class Iter>
+	void assign(Iter _First, Iter _Last);
+	
+	void push_back(value_type _Val);
+	void push_front(value_type _Val);
+	void pop_back();
+	void pop_back();
+
+	void insert(iterator _Where, size_type _Count, const value_type _Val);
+	void insert(iterator _Where, iterator _First, iterator _Last);
+	iterator insert(iterator _Where, const value_type _Val);
 };	//end of deque class
+
+
 
 
 } //namespace TinySTL
