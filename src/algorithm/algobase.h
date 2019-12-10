@@ -4,6 +4,10 @@
 *********************************************************************/
 #ifndef ALGOBASE_H
 #define ALGOBASE_H
+
+#include"../fundation/utility.h"
+
+
 namespace TinySTL{
 
 	//**********[max]**********
@@ -26,6 +30,14 @@ namespace TinySTL{
 	template<class T, class Compare>
 	const T& min(const T&a, const T&b, Compare comp) {
 		return !comp(a, b) ? a : b;
+	}
+
+	//********* [iter_swap] ********************
+	//********* [Algorithm Complexity: O(1)] ****************
+	template<class Iter1, class Iter2>
+	void iter_swap(Iter1 _Left, Iter2 _Right) {
+		//交换两个迭代器所指对象
+		TinySTL::swap(*_Left, *_Right);
 	}
 
 	//**********[fill]**********
