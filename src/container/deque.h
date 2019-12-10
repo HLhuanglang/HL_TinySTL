@@ -23,27 +23,27 @@ template <class T>
 	//CLASS TEMPLATE _Deque_iterator
 template<class _Ty, class _Ref, class _Ptr>
 	struct _Deque_iterator
-		: public TinySTL::iterator<TinySTL::bidirectional_iterator_tag, T> 
+		: public TinySTL::iterator<TinySTL::bidirectional_iterator_tag, _Ty> 
 	{	//继承以后下面的型别应该可以不用写了吧
-	typedef _Ty		value_type;
+	typedef _Ty			value_type;
 	typedef _Ptr		pointer;
-	typedef _Ref	reference;
-	typedef size_t	size_type;
+	typedef _Ref		reference;
+	typedef size_t		size_type;
 	typedef ptrdiff_t	difference_type;
 
 	typedef _Ty*	value_pointer;
 	typedef _Ty**	map_pointer;
 	static const size_type buffer_size = deque_buf_size<_Ty>::value;
 
-	typedef _Deque_iterator<_Ty, _Ty&, _Ty*>	iterator;
+	typedef _Deque_iterator<_Ty, _Ty&, _Ty*>				iterator;
 	typedef _Deque_iterator<_Ty, const _Ty&, const _Ty*>	const_iterator;
-	typedef _Deque_iterator<_Ty, _Ty&, _Ty*>	self;
+	typedef _Deque_iterator<_Ty, _Ty&, _Ty*>				self;
 
 	//以下四个成员构成一个迭代器
-	value_pointer		_Cur;		//指向所属缓冲区的当前元素
+	value_pointer		_Cur;	//指向所属缓冲区的当前元素
 	value_pointer		_First;	//指向所属缓冲区的头部
 	value_pointer		_Last;	//指向所属缓冲区的尾部
-	map_pointer		_Node;	//指向map，表示缓冲区所在的结点
+	map_pointer			_Node;	//指向map，表示缓冲区所在的结点
 
 	//构造、复制、移动函数
 	_Deque_iterator() = default;
@@ -191,31 +191,31 @@ template<class _Ty, class _Ref, class _Ptr>
 template<class T>
 class deque {
 	typedef TinySTL::allocator<T>	_Allocator_type;	
-	typedef TinySTL::allocator<T*>	_Map_allocator;		//用于申请map（map里面存的是指针）
+	typedef TinySTL::allocator<T*>	_Map_allocator;			//用于申请map（map里面存的是指针）
 	typedef TinySTL::allocator<T>	_Buffer_allocator;		//用于申请buffer的所需要的空间
 	typedef TinySTL::allocator<T>	_Data_allocator;		//用于在buffer内创造对象
 
 	//内嵌型别定义(用_Alloccator_type主要就是方便编写。也只可以直接定义typedef T value_type)
-	typedef typename _Allocator_type::value_type				value_type;
-	typedef typename _Allocator_type::pointer					pointer;
+	typedef typename _Allocator_type::value_type			value_type;
+	typedef typename _Allocator_type::pointer				pointer;
 	typedef typename _Allocator_type::const_pointer			const_pointer;
 	typedef typename _Allocator_type::reference				reference;
 	typedef typename _Allocator_type::const_reference		const_reference;
-	typedef typename _Allocator_type::size_type					size_type;
+	typedef typename _Allocator_type::size_type				size_type;
 	typedef typename _Allocator_type::difference_type		difference_type;
 
-	typedef pointer*				map_pointer;
+	typedef pointer*		map_pointer;
 	typedef const_pointer*	const_map_pointer;
 	
 	//迭代器定义
-	typedef _Deque_iterator<T, T&, T*>								iterator;
-	typedef _Deque_iterator<T, const T&, const T*>			const_iterator;
+	typedef _Deque_iterator<T, T&, T*>							iterator;
+	typedef _Deque_iterator<T, const T&, const T*>				const_iterator;
 	typedef TinySTL::reverse_iterator<iterator>					reverse_iterator;
 	typedef TinySTL::reverse_iterator<const_iterator>			const_reverse_iterator;
 
 	//成员变量定义
-	iterator _First;				//指向第一个节点
-	iterator _Last;				//指向最后一个节点
+	iterator _First;		//指向第一个节点
+	iterator _Last;			//指向最后一个节点
 	map_pointer _Map;		//指向中央控制区map
 	size_type _Map_size;	//map内有多少个指针（用于map扩容）
 
