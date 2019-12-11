@@ -8,73 +8,109 @@
 #include"../fundation/utility.h"
 
 
-namespace TinySTL{
+namespace TinySTL {
 
-	//**********[max]**********
-	//**********[Algorithm Complexity: O(1)]**********
-	template<class T>
-	const T&max(const T&a, const T&b) {
-		return a < b ? b : a;
-	}
-	template<class T, class Compare>
-	const T& max(const T&a, const T&b, Compare comp) {
-		return (comp(a, b)) ? b : a;
-	}
-
-	//**********[min]**********
-	//**********[Algorithm Complexity: O(1)]**********
-	template<class T>
-	const T&min(const T&a, const T&b) {
-		return a < b ? a : b;
-	}
-	template<class T, class Compare>
-	const T& min(const T&a, const T&b, Compare comp) {
-		return !comp(a, b) ? a : b;
+	/******************************************************
+	函 数 名：max
+	函数作用：返回二者中更大的一方
+	******************************************************/
+	template<class _Ty>
+	const _Ty& max(const _Ty& _Left, const _Ty& _Right)
+	{
+		return _Left < _Right ? _Right : _Left;
 	}
 
-	//********* [iter_swap] ********************
-	//********* [Algorithm Complexity: O(1)] ****************
-	template<class Iter1, class Iter2>
-	void iter_swap(Iter1 _Left, Iter2 _Right) {
-		//交换两个迭代器所指对象
+	template<class _Ty,
+		class _Pr>
+		const _Ty& max(const _Ty& _Left, const _Ty& _Right, _Pr _Pred)
+	{	//由_Pred决定“大小比较”标准
+		return (_Pred(_Left, _Right)) ? _Right : _Left;
+	}
+
+	/******************************************************
+	函 数 名：min
+	函数作用：返回二者中更小的一方
+	******************************************************/
+	template<class _Ty>
+	const _Ty& min(const _Ty& _Left, const _Ty& _Right)
+	{
+		return _Right < _Left ? _Right : _Left;
+	}
+
+	template<class _Ty,
+		class _Pr>
+		const _Ty& min(const _Ty& _Left, const _Ty& _Right, _Pr _Pred)
+	{	//由_Pred决定“大小比较”标准
+		return (_Pred(_Right, _Left)) ? _Right : _Left;
+	}
+
+	/******************************************************
+	函 数 名：iter_swap
+	函数作用：交换两个迭代器所指对象
+	******************************************************/
+	template<class _FowIt1,
+		class _FowIt2> inline
+		void iter_swap(_FowIt1 _Left, _FowIt2 _Right)
+	{	//交换两个迭代器所指对象
 		TinySTL::swap(*_Left, *_Right);
+		//typename iterator_traits<_FowIt1>::value_type _Tmp = *_Left;
+		//*_Left = *_Right;
+		//*_Right = _Tmp;
 	}
 
-	//**********[fill]**********
-	//**********[Algorithm Complexity: O(N)]**********
-	template<class ForwardIterator, class T>
-	void fill(ForwardIterator first, ForwardIterator last, const T&val) {
-		for (; first != last; ++first)
-			*first = val;
-	}
-	inline void fill(char*first, char*last, const char&val) {
-		memset(first, static_cast<unsigned char>(val), last - first);
-	}
-	inline void fill(wchar_t *first, wchar_t *last, const wchar_t& val) {
-		memset(first, static_cast<unsigned char>(val), sizeof(wchar_t)*(last - first));
+	/******************************************************
+	函 数 名：equal
+	函数作用：判断两个序列在[_First,_Last)区间相等。相等返回true
+	注 意 点：第二序列元素个数 >= 第一序列
+	******************************************************/
+	template<class _InIt1,
+		class _InIt2> inline
+		bool equal(_InIt1 _First1, _InIt1 _Last1,
+			_InIt2 _First2)
+	{
+		for (; _First1 != _Last1; ++_First1, ++_First2)
+		{	//如果第二序列更短，迭代时会造成不可预测的结果
+			if (*_First1 != *_First2)
+				return false;
+			return true;
+		}
 	}
 
-	//********* [fill_n] ********************
-	//********* [Algorithm Complexity: O(N)] ****************
-	template<class OutputIterator, class Size, class T>
-	OutputIterator fill_n(OutputIterator first, Size n, const T& value)
+	/******************************************************
+	函 数 名：fill
+	函数作用：将[_First,_Last)内的所有元素改填新值
+	******************************************************/
+	template<class _FowIt,
+		class _Ty>
+		void fill(_FowIt _First, _FowIt _Last, _Ty _Val)
 	{
-		for (; n > 0; --n, ++first)
-			*first = value;
-		return first;
+		for (; _First != _Last; ++_First)
+		{
+			*_First = _Val;
+		}
 	}
-	template<class Size>
-	char *fill_n(char *first, Size n, const char& value)
+
+
+	/******************************************************
+	函 数 名：fill_n
+	函数作用：将区间[_First，_First+n）填充为新值
+	******************************************************/
+	template<class _OutIt,
+		class Size,
+		class _Ty>
+		_OutIt fill_n(_OutIt _First, Size n, const _Ty& _Val)
 	{
-		memset(first, static_cast<unsigned char>(value), n);
-		return first + n;
+		for (; n > 0; --n, ++_First)
+			*_First = _Val;
+		return _First;
 	}
-	template<class Size>
-	wchar_t *fill_n(wchar_t *first, Size n, const wchar_t& value)
-	{
-		memset(first, static_cast<unsigned char>(value), n * sizeof(wchar_t));
-		return first + n;
-	}
+
+	/******************************************************
+	函 数 名：lexicographical_compare
+	函数作用：
+	返 回 值：有则说明，无则去除这一行
+	******************************************************/
+
 
 } //namespace TinySTL
 #endif // !ALGOBASE_H
