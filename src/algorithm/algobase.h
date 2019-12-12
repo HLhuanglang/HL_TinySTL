@@ -6,6 +6,7 @@
 #define ALGOBASE_H
 
 #include"../fundation/utility.h"
+#include<algorithm>
 
 
 namespace TinySTL {
@@ -108,8 +109,59 @@ namespace TinySTL {
 	/******************************************************
 	函 数 名：lexicographical_compare
 	函数作用：
-	返 回 值：有则说明，无则去除这一行
+		以“字典排列方式”对两个序列[_First1,_Last1)和[_First2,_Last2)进行比较。
+		也就是第一序列以字典排列方式而言不小于第二序列。
+	函数说明：
+		比较操作针对两序列中的对应位置上的元素进行，并持续到
+		(1)某一组元素彼此不相等
+		(2)同时到达_Last1和_Last2
+		(3)到达_Last1或_Last2
+		返 回 值：
+		(1)如果第一序列的元素较小，返回true。否则返回false
+		(2)如果到达_Last1而尚未到达_Last2，返回true
+		(3)如果到达_Last2而尚未到达_Last1,返回false
+		(4)如果同时到达_Last1和_Last2，返回false
 	******************************************************/
+	template<class _InIt1,
+		class _InIt2>
+		bool lexicographical_compare(_InIt1 _First1, _InIt1 _Last1,
+			_InIt2 _First2, _InIt2 _Last2)
+	{
+		for (; _First1 != _Last1 && _First2 != _Last2; ++_First1, ++_First2)
+		{	//任何一个序列到达尾部，就结束。否则两序列就相对应一一进行对比
+			if (*_First1 < *_First2)
+				return true;
+			if (*_First1 > *_First2)
+				return false;
+		}
+		return _First1 == _Last1 && _First2 != _Last2;/*第一序列到达尾部而第二序列尚有余额*/
+	}
+
+	//使用函数对象作为比较准则，进行重载
+	template<class _InIt1,
+		class _InIt2,
+		class _Pr>
+		bool lexicographical_compare(_InIt1 _First1, _InIt1 _Last1,
+			_InIt2 _First2, _InIt2 _Last2, _Pr _Pred)
+	{
+		for (; _First1 != _Last1 && _First2 != _Last2; ++_First1, ++_First2)
+		{	//任何一个序列到达尾部，就结束。否则两序列就相对应一一进行对比
+			if (_Pred(*_First1,*_First2))
+				return true;
+			if (_Pred(*_First2,*_First1))
+				return false;
+		}
+		return _First1 == _Last1 && _First2 != _Last2;/*第一序列到达尾部而第二序列尚有余额*/
+
+	}
+
+	/**************************************************************************
+	函 数 名：mismatch
+	函数作用：用来平行比较两个序列，指出两者之间的第一个不匹配点
+	返 回 值：返回一对迭代器，分别指向两序列中不匹配的点
+	注 意 点：第二序列元素个数需 >= 第一序列
+	**************************************************************************/
+
 
 
 } //namespace TinySTL
