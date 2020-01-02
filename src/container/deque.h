@@ -32,7 +32,7 @@ template<class _Ty, class _Ref, class _Ptr>
 	typedef ptrdiff_t	difference_type;
 
 	typedef _Ty*	value_pointer;
-	typedef _Ty**	map_pointer;
+	typedef _Ty**	map_node_pointer;
 	static const size_type buffer_size = deque_buf_size<_Ty>::value;
 
 	typedef _Deque_iterator<_Ty, _Ty&, _Ty*>				iterator;
@@ -43,7 +43,7 @@ template<class _Ty, class _Ref, class _Ptr>
 	value_pointer		_Cur;	//指向所属缓冲区的当前元素
 	value_pointer		_First;	//指向所属缓冲区的头部
 	value_pointer		_Last;	//指向所属缓冲区的尾部
-	map_pointer			_Node;	//指向map，表示缓冲区所在的结点
+	map_node_pointer	_Node;	//指向map上某一个结点，表示缓冲区所在的结点
 
 	//构造、复制、移动函数
 	_Deque_iterator() = default;
@@ -95,7 +95,7 @@ template<class _Ty, class _Ref, class _Ptr>
 	{	//++前置
 		++_Cur;
 		if (_Cur == _Last) {
-			skip_node(_Node+1);
+			_set_node(_Node+1);
 			_Cur = _First;
 		}
 		return *this;
@@ -112,7 +112,7 @@ template<class _Ty, class _Ref, class _Ptr>
 	{
 		--_Cur;
 		if (_Cur == _First) {
-			skip_node(_Node - 1);
+			_set_node(_Node - 1);
 			_Cur = _Last;
 		}
 		return *this;
@@ -138,7 +138,7 @@ template<class _Ty, class _Ref, class _Ptr>
 			difference_type _Node_offset = _Off > 0
 				? _Off / difference_type(buffer_size())
 				: -difference_type((-_Off - 1) / buffer_size()) - 1;
-			skip_node(_Node + _Node_offset);	/*确定正确的结点位置*/
+			_set_node(_Node + _Node_offset);	/*确定正确的结点位置*/
 			_Cur = _First + (_Off - _Node_offset * difference_type(buffer_size()));
 		}
 		return *this;
@@ -178,7 +178,7 @@ template<class _Ty, class _Ref, class _Ptr>
 	bool operator>=(const self& _Right)const { return !(*this < _Right); }
 
 
-	void skip_node(map_pointer _Next_node)
+	void _set_node(map_node_pointer _Next_node)
 	{	//更换结点(也就是更换新的缓冲区)
 		_Node = _Next_node;
 		_First = *_Next_node;
@@ -204,7 +204,7 @@ class deque {
 	typedef typename _Allocator_type::size_type				size_type;
 	typedef typename _Allocator_type::difference_type		difference_type;
 
-	typedef pointer*		map_pointer;
+	typedef pointer*		map_pointer;		//指向map的指针
 	typedef const_pointer*	const_map_pointer;
 	
 	//迭代器定义
@@ -213,14 +213,21 @@ class deque {
 	typedef TinySTL::reverse_iterator<iterator>					reverse_iterator;
 	typedef TinySTL::reverse_iterator<const_iterator>			const_reverse_iterator;
 
+private:
 	//成员变量定义
-	iterator _First;		//指向第一个节点
-	iterator _Last;			//指向最后一个节点
+	iterator	_Begin;		//指向第一个节点
+	iterator	_End;		//指向最后一个节点
 	map_pointer _Map;		//指向中央控制区map
-	size_type _Map_size;	//map内有多少个指针（用于map扩容）
+	size_type	_Map_size;	//map内有多少个指针（用于map扩容）
 
 private:
 	//辅助函数声明
+	map_pointer _create_map(size_type _Count);
+	void _create_buffer(map_pointer _Start, map_pointer _End);
+	void _map_buffer_init(size_type _nNode);
+	void _fill_init(size_type _Count, const value_type& _Val);
+	void _copy_init(iterator _First, iterator _Last);
+
 
 public:
 	//成员函数声明
@@ -285,6 +292,67 @@ public:
 	iterator insert(iterator _Where, const value_type _Val);
 };	//end of deque class
 
+/********************************************************************************/
+//helper function实现
+	/*
+	函数功能：
+	函数返回：
+	*/
+
+
+template<class T>
+typename deque<T>::map_pointer 
+deque<T>::_create_map(size_type _Count)
+{	/*
+	函数功能：创建一个含有_Count个结点的map，同时初始化(nullptr)所有结点
+	函数返回：返回一个指针，指向map首地址
+	*/
+	map_pointer _Result = nullptr;
+	_Result = _Map_allocator::allocate(_Count);
+	for (size_type i = 0; i < _Count; ++i) {
+		*(_Result + i) = nullptr;
+	}
+	return _Result;
+}
+
+template<class T>
+void deque<T>::_create_buffer(map_pointer _Start, map_pointer _Finish)
+{	/*
+	函数功能：为[_Start, _Finish]区间上的每一个map结点，创建一个buffer缓冲区，挂载在map结点上。
+	函数返回：无
+	*/
+	map_pointer _Tmp = _Start;
+	for (; _Tmp <= _Finish; _Tmp++) {
+		*_Tmp = _Buffer_allocator::allocate(buffer_size);// *_Tmp代表map结点的值（就是个指针） 
+	}
+}
+
+template<class T>
+void deque<T>::_map_buffer_init(size_type _Count)
+{	/*
+	函数功能：初始化map，以及创建缓冲区挂载在map结点上
+	函数参数：_Count用于计算需要分配多少个缓冲区
+	*/
+	const size_type _Node = _Count / buffer_size + 1;	/*缓冲区个数*/
+
+}
+
+
+template<class T>
+void deque<T>::_fill_init(size_type _Count, const value_type& _Val) {	
+	/*
+	函数功能：初始化容器时，创建_Count个值为_Val的元素
+	函数返回：无
+	*/
+
+	//map、buffer初始化
+	//调用uninitialized_fill填充
+
+}
+
+	
+/********************************************************************************/
+//对象构造、析构、复制、移动实现
 
 
 
