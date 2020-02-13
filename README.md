@@ -34,3 +34,4 @@ TinySTL是参考sgi版本的源码，同时也参考了github上几个比较优�
 1. vs2017（其他版本也可以）
 2. git clone https://github.com/HLhuanglang/HL_TinySTL.git
 3. 下载整个项目以后，进入HL_TinySTL\HL_TinySTL_VS2017 点击.sln即可
+(ps:2020.2.13号，由于前段时间电脑进水了，导致资料丢失了很多，同时开发环境换成了vs2019。)
